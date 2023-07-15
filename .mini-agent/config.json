@@ -1,0 +1,10 @@
+{
+	"config": {
+		"aaa": "bbb",
+		"ccc": "dddd"
+	},
+	"components": [{
+		"aaa": "bbb",
+		"ccc": "dddd"
+	}]
+}

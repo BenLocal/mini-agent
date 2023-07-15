@@ -8,7 +8,8 @@
             "mainClass": "io.vertx.core.Launcher",
             "args": [
                 "run",
-                "org.mini.agent.runtime.MainVerticle"
+                "org.mini.agent.runtime.MainVerticle",
+                "-Dmini.agent.config.path=${workspaceFolder}/.mini-agent"
             ]
         }
     ]

@@ -2,6 +2,7 @@ package org.mini.agent.runtime;
 
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
 import io.vertx.servicediscovery.ServiceDiscovery;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -21,4 +22,6 @@ public class RuntimeContext {
     private Context vertxContext;
 
     private ServiceDiscovery serviceDiscovery;
+
+    private JsonObject config;
 }
