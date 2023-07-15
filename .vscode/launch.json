@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Runtime",
+            "request": "launch",
+            "mainClass": "io.vertx.core.Launcher",
+            "args": [
+                "run",
+                "org.mini.agent.runtime.MainVerticle"
+            ]
+        }
+    ]
+}
