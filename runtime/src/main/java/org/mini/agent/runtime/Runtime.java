@@ -20,11 +20,11 @@ import io.vertx.servicediscovery.ServiceDiscovery;
  */
 public class Runtime implements Verticle {
     private final Vertx vertx;
+    private final RuntimeContext appContext;
 
-    private RuntimeContext appContext;
-
-    public Runtime(Vertx vertx) {
+    public Runtime(Vertx vertx, RuntimeContext appContext) {
         this.vertx = vertx;
+        this.appContext = appContext;
     }
 
     @Override
@@ -35,8 +35,7 @@ public class Runtime implements Verticle {
     @Override
     public void init(Vertx vertx, Context ctx) {
         // get runtime config from vertx
-        this.appContext = new RuntimeContext()
-                .setVertx(vertx)
+        this.appContext.setVertx(vertx)
                 .setVertxContext(ctx);
     }
 
@@ -44,19 +43,17 @@ public class Runtime implements Verticle {
     public void start(Promise<Void> starter) throws Exception {
         // load runtime config
         Promise<JsonObject> configPromise = Promise.promise();
-        configPromise.future().onComplete(ar -> {
-            innerStart(ar, starter);
-        });
+        configPromise.future().onComplete(ar -> innerStart(ar, starter));
         loadConfig(configPromise);
     }
 
     @Override
     public void stop(Promise<Void> arg0) throws Exception {
+        // ignore
     }
 
     private void loadConfig(Promise<JsonObject> complete) {
-        RuntimeConfigLoader loader = new RuntimeConfigLoader();
-        loader.load(appContext, complete);
+        new RuntimeConfigLoader().load(appContext, complete);
     }
 
     private void innerStart(AsyncResult<JsonObject> ar, Promise<Void> starter) {
@@ -75,7 +72,11 @@ public class Runtime implements Verticle {
         this.appContext.setConfig(ar.result());
         ServiceDiscovery discovery = ServiceDiscovery.create(vertx)
                 .registerServiceImporter(new NacosServiceImporter(),
-                        new JsonObject().put("host", "10.1.72.35").put("port", 80), x -> {
+                        this.appContext.getNameResolution()
+                                .getJsonObject("configuration")
+                                .put("namespace", this.appContext.getNamespace())
+                                .put("appId", this.appContext.getAppId()),
+                        x -> {
                             if (x.succeeded()) {
                                 // started
                             } else {

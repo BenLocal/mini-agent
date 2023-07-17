@@ -17,6 +17,14 @@ import lombok.experimental.Accessors;
 @Data
 @Accessors(chain = true)
 public class RuntimeContext {
+    private final String namespace;
+    private final String appId;
+
+    public RuntimeContext(String appId, String namespace) {
+        this.appId = appId;
+        this.namespace = namespace;
+    }
+
     private Vertx vertx;
 
     private Context vertxContext;
@@ -24,4 +32,8 @@ public class RuntimeContext {
     private ServiceDiscovery serviceDiscovery;
 
     private JsonObject config;
+
+    public JsonObject getNameResolution() {
+        return config.getJsonObject("config").getJsonObject("nameResolution");
+    }
 }

@@ -1,10 +1,19 @@
 {
 	"config": {
-		"aaa": "bbb",
-		"ccc": "dddd"
-	},
-	"components": [{
-		"aaa": "bbb",
-		"ccc": "dddd"
-	}]
+		"nameResolution": {
+			"type": "nacos",
+			"configuration": {
+				"groupName": "dev",
+				"server": {
+					"ip": "10.1.72.41",
+					"port": 8848
+				},
+				"register": {
+					"enable": true,
+					"ip": "10.1.72.35",
+					"port": 80
+				}
+			}
+		}
+	}
 }

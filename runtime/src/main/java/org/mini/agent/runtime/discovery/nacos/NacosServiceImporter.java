@@ -38,22 +38,29 @@ public class NacosServiceImporter implements ServiceImporter {
         this.publisher = publisher;
         this.vertx = vertx;
 
-        String host = String.format("%s:%s", configuration.getString("nacos_ip", "10.1.72.41"),
-                configuration.getInteger("nacos_port", 8848));
-        String namespace = configuration.getString("namespace", "bofei-dev");
-        String clusterName = configuration.getString("clusterName", "shiben_dev");
-        String serviceName = configuration.getString("serviceName", "shiben");
-        String ip = configuration.getString("ip", "10.1.72.35");
-        int port = configuration.getInteger("port", 80);
+        String groupName = configuration.getString("groupName");
+        String namespace = configuration.getString("namespace");
+        String appId = configuration.getString("appId");
+
+        // server info
+        JsonObject nacosConfig = configuration.getJsonObject("server");
+        String serverIp = nacosConfig.getString("ip");
+        int serverPort = nacosConfig.getInteger("port");
+        String host = String.format("%s:%s", serverIp, serverPort);
+
+        // register info
+        JsonObject registerConfig = configuration.getJsonObject("register");
+        // default unregister
+        boolean enable = registerConfig.getBoolean("enable", false);
+        String regIp = registerConfig.getString("ip", "10.1.72.35");
+        int regPort = registerConfig.getInteger("port", 80);
 
         vertx.executeBlocking(promise -> {
             // create NamingService
             try {
                 Properties properties = new Properties();
-                properties.setProperty("serverAddr", "10.1.72.41:8848");
-                properties.setProperty("namespace", "bofei-dev");
-                // properties.setProperty("serverAddr", host);
-                // properties.setProperty("namespace", namespace);
+                properties.setProperty("serverAddr", host);
+                properties.setProperty("namespace", namespace);
                 nacos = NamingFactory.createNamingService(properties);
             } catch (NacosException e) {
                 future.fail(e);
@@ -62,10 +69,12 @@ public class NacosServiceImporter implements ServiceImporter {
 
             heathCheck();
             vertx.setPeriodic(3000, t -> heathCheck());
-            register(ip, port, clusterName, serviceName);
-            vertx.setPeriodic(3000, t -> register(ip, port, clusterName, serviceName));
-            scan(future);
-            vertx.setPeriodic(3000, t -> scan(null));
+            if (enable) {
+                register(regIp, regPort, appId, groupName);
+                vertx.setPeriodic(3000, t -> register(regIp, regPort, appId, groupName));
+            }
+            scan(future, groupName);
+            vertx.setPeriodic(3000, t -> scan(null, groupName));
         }).onComplete(ar -> {
             if (ar.failed()) {
                 future.fail(ar.cause());
@@ -90,14 +99,14 @@ public class NacosServiceImporter implements ServiceImporter {
         health.set("up".equalsIgnoreCase(status));
     }
 
-    private void register(String ip, int port, String clusterName, String serviceName) {
+    private void register(String ip, int port, String appId, String groupName) {
         if (registed.get()) {
             return;
         }
 
         // register
         try {
-            nacos.registerInstance(serviceName, "dev", ip,
+            nacos.registerInstance(appId, groupName, ip,
                     port);
             registed.set(true);
         } catch (NacosException e) {
@@ -105,7 +114,7 @@ public class NacosServiceImporter implements ServiceImporter {
         }
     }
 
-    private synchronized void scan(Promise<Void> future) {
+    private synchronized void scan(Promise<Void> future, String groupName) {
         if (!health.get()) {
             return;
         }
@@ -113,13 +122,13 @@ public class NacosServiceImporter implements ServiceImporter {
         int pageNo = 1;
         while (true) {
             try {
-                ListView<String> serves = nacos.getServicesOfServer(pageNo, 100, "dev");
+                ListView<String> serves = nacos.getServicesOfServer(pageNo, 100, groupName);
                 if (serves.getCount() == 0) {
                     break;
                 }
 
                 serves.getData().stream().forEach(s -> {
-                    scanHeathService(s, "dev");
+                    scanHeathService(s, groupName);
                 });
                 pageNo++;
             } catch (NacosException e) {
@@ -147,7 +156,6 @@ public class NacosServiceImporter implements ServiceImporter {
                 return;
             } else {
                 ar.result().stream().filter(x -> x.isHealthy()).forEach(item -> {
-                    System.out.println("scanHeathService:" + item.getInstanceId());
                     publisher.publish(createRecord(item), ar1 -> {
                         if (ar1.failed()) {
                             // log

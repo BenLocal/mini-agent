@@ -9,7 +9,11 @@
             "args": [
                 "run",
                 "org.mini.agent.runtime.MainVerticle",
-                "-Dmini.agent.config.path=${workspaceFolder}/.mini-agent"
+                "-Dmini.agent.config.path=${workspaceFolder}/.mini-agent",
+                "--appId",
+                "mini-agent-test",
+                "--namespace",
+                "bofei-dev",
             ]
         }
     ]
