@@ -49,7 +49,9 @@
     </dependencies>
   </dependencyManagement>
 
-  <modules>  
+  <modules>
+    <module>vertx-service-discovery-bridge-nacos</module>
+
     <module>runtime</module>
   </modules>
 </project>

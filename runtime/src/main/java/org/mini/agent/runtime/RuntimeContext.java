@@ -1,11 +1,10 @@
 package org.mini.agent.runtime;
 
+import org.mini.agent.runtime.factory.ServiceDiscoveryFactory;
+
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
-import io.vertx.servicediscovery.ServiceDiscovery;
-import lombok.Data;
-import lombok.experimental.Accessors;
 
 /**
  * 
@@ -14,26 +13,70 @@ import lombok.experimental.Accessors;
  * @Version 1.0
  *
  */
-@Data
-@Accessors(chain = true)
 public class RuntimeContext {
     private final String namespace;
     private final String appId;
+    private final ServiceDiscoveryFactory serviceDiscoveryFactory;
+    private final Vertx vertx;
+    private final Context vertxContext;
 
-    public RuntimeContext(String appId, String namespace) {
+    public RuntimeContext(Vertx vertx,
+            Context vertxContext,
+            String appId,
+            String namespace) {
         this.appId = appId;
         this.namespace = namespace;
+        this.vertx = vertx;
+        this.vertxContext = vertxContext;
+
+        this.serviceDiscoveryFactory = new ServiceDiscoveryFactory();
     }
-
-    private Vertx vertx;
-
-    private Context vertxContext;
-
-    private ServiceDiscovery serviceDiscovery;
 
     private JsonObject config;
 
+    /**
+     * @param config the config to set
+     */
+    public void setConfig(JsonObject config) {
+        this.config = config;
+    }
+
     public JsonObject getNameResolution() {
         return config.getJsonObject("config").getJsonObject("nameResolution");
+    }
+
+    /**
+     * @return the namespace
+     */
+    public String getNamespace() {
+        return namespace;
+    }
+
+    /**
+     * @return the appId
+     */
+    public String getAppId() {
+        return appId;
+    }
+
+    /**
+     * @return the serviceDiscoveryFactory
+     */
+    public ServiceDiscoveryFactory getServiceDiscoveryFactory() {
+        return serviceDiscoveryFactory;
+    }
+
+    /**
+     * @return the vertx
+     */
+    public Vertx getVertx() {
+        return vertx;
+    }
+
+    /**
+     * @return the vertxContext
+     */
+    public Context getVertxContext() {
+        return vertxContext;
     }
 }

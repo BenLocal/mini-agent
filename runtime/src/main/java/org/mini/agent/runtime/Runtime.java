@@ -1,7 +1,6 @@
 package org.mini.agent.runtime;
 
 import org.mini.agent.runtime.config.RuntimeConfigLoader;
-import org.mini.agent.runtime.discovery.nacos.NacosServiceImporter;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -9,7 +8,6 @@ import io.vertx.core.Promise;
 import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
-import io.vertx.servicediscovery.ServiceDiscovery;
 
 /**
  * 
@@ -34,9 +32,7 @@ public class Runtime implements Verticle {
 
     @Override
     public void init(Vertx vertx, Context ctx) {
-        // get runtime config from vertx
-        this.appContext.setVertx(vertx)
-                .setVertxContext(ctx);
+        // get runtime config from vertx context
     }
 
     @Override
@@ -70,23 +66,13 @@ public class Runtime implements Verticle {
 
         // config loaded
         this.appContext.setConfig(ar.result());
-        ServiceDiscovery discovery = ServiceDiscovery.create(vertx)
-                .registerServiceImporter(new NacosServiceImporter(),
-                        this.appContext.getNameResolution()
-                                .getJsonObject("configuration")
-                                .put("namespace", this.appContext.getNamespace())
-                                .put("appId", this.appContext.getAppId()),
-                        x -> {
-                            if (x.succeeded()) {
-                                // started
-                            } else {
-                                // failed to start
-                                starter.fail(x.cause());
-                            }
-                        });
 
-        this.appContext.setServiceDiscovery(discovery);
+        // set service discovery
+        String nameResolutionType = this.appContext.getNameResolution().getString("type");
+        this.appContext.getServiceDiscoveryFactory()
+                .init(this.appContext, nameResolutionType);
+
+        // start http api server
         new HttpApiServer(appContext).start(starter);
-
     }
 }

@@ -49,10 +49,14 @@ public class HttpApiServer {
 
     private void invokeMethod(RoutingContext ctx) {
         String appId = ctx.pathParam("appId");
-        String path = String.format("/%s", ctx.pathParam("*"));
         HttpServerRequest request = ctx.request();
         // reverse proxy
-        ProxyRequest proxyRequest = ProxyRequest.reverseProxy(request).setURI(path);
+        ProxyRequest proxyRequest = ProxyRequest.reverseProxy(request);
+        if (appId.equals(context.getAppId())) {
+            // local invoke
+            proxyRequest.setURI(String.format("/%s", ctx.pathParam("*")));
+        }
+
         Promise<Record> promise = Promise.promise();
         promise.future().onComplete(x -> {
             if (x.failed() || x.result() == null) {
@@ -65,8 +69,8 @@ public class HttpApiServer {
             } else {
                 Record tmp = x.result();
                 int port = tmp.getLocation().getInteger("port");
-                String host = tmp.getLocation().getString("endpoint");
-                proxyClient.request(proxyRequest.getMethod(), port, host, proxyRequest.getURI())
+                String ip = tmp.getLocation().getString("ip");
+                proxyClient.request(proxyRequest.getMethod(), port, ip, proxyRequest.getURI())
                         .compose(proxyRequest::send)
                         .onSuccess(ProxyResponse::send)
                         .onFailure(err -> {
@@ -80,26 +84,6 @@ public class HttpApiServer {
         });
 
         // get host and port by appId (name resolution)
-        getRecord(appId, promise);
+        context.getServiceDiscoveryFactory().getRegister().getRecord(appId, promise);
     }
-
-    private void getRecord(String appId, Promise<Record> promise) {
-        // get record by appId
-        context.getServiceDiscovery().getRecord(r -> r.getName().equals("10.1.72.35#80#DEFAULT#dev@@shiben"))
-                .onComplete(ar -> {
-                    if (ar.succeeded()) {
-                        if (ar.result() != null) {
-                            // we have a record
-                            promise.complete(ar.result());
-                        } else {
-                            // the lookup succeeded, but no matching service
-                            promise.complete();
-                        }
-                    } else {
-                        // lookup failed
-                        promise.fail(ar.cause());
-                    }
-                });
-    }
-
 }

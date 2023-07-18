@@ -4,11 +4,13 @@
 			"type": "nacos",
 			"configuration": {
 				"groupName": "dev",
+				"scanInterval": 3000,
 				"server": {
 					"ip": "10.1.72.41",
 					"port": 8848
 				},
 				"register": {
+					"retryInterval": 3000,
 					"enable": true,
 					"ip": "10.1.72.35",
 					"port": 80

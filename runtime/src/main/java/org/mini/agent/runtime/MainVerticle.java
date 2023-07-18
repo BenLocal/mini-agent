@@ -1,10 +1,7 @@
 package org.mini.agent.runtime;
 
-import java.util.Arrays;
-
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
-import io.vertx.core.cli.Argument;
 import io.vertx.core.cli.CLI;
 import io.vertx.core.cli.CommandLine;
 import io.vertx.core.cli.Option;
@@ -47,7 +44,7 @@ public class MainVerticle extends AbstractVerticle {
         }
         String appId = commandLine.getOptionValue("appId");
         String namespace = commandLine.getOptionValue("namespace");
-        RuntimeContext appContext = new RuntimeContext(appId, namespace);
+        RuntimeContext appContext = new RuntimeContext(vertx, context, appId, namespace);
         vertx.deployVerticle(new Runtime(vertx, appContext));
     }
 }
