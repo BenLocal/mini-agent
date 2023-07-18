@@ -1,7 +1,7 @@
 package org.mini.agent.runtime.factory;
 
 import org.mini.agent.runtime.RuntimeContext;
-import org.mini.agent.runtime.component.IServiceDiscoveryRegister;
+import org.mini.agent.runtime.abstraction.IServiceDiscoveryRegister;
 
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;

@@ -5,7 +5,7 @@ import java.util.Map;
 
 import org.mini.agent.runtime.MiniAgentException;
 import org.mini.agent.runtime.RuntimeContext;
-import org.mini.agent.runtime.component.IServiceDiscoveryRegister;
+import org.mini.agent.runtime.abstraction.IServiceDiscoveryRegister;
 
 /**
  * 

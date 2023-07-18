@@ -1,4 +1,4 @@
-package org.mini.agent.runtime.component;
+package org.mini.agent.runtime.abstraction;
 
 import org.mini.agent.runtime.RuntimeContext;
 
