@@ -9,6 +9,7 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.httpproxy.ProxyRequest;
 import io.vertx.httpproxy.ProxyResponse;
 import io.vertx.servicediscovery.Record;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 
@@ -17,6 +18,7 @@ import io.vertx.servicediscovery.Record;
  * @Version 1.0
  *
  */
+@Slf4j
 public class HttpApiServer {
     private final RuntimeContext context;
     private final Vertx vertx;
@@ -36,7 +38,7 @@ public class HttpApiServer {
         vertx.createHttpServer().requestHandler(this.router).listen(8888, http -> {
             if (http.succeeded()) {
                 // started
-                System.out.println("http api server started with port 8888");
+                log.info("http api server started with port 8888");
             } else {
                 startPromise.fail(http.cause());
             }

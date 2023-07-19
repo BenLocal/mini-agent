@@ -22,6 +22,7 @@
     <junit-jupiter.version>5.9.1</junit-jupiter.version>
     <junit.version>4.11</junit.version>
     <lombok.version>1.18.22</lombok.version>
+    <log4j2.version>2.20.0</log4j2.version>
   </properties>
 
   <dependencyManagement>
@@ -34,11 +35,27 @@
         <scope>import</scope>
       </dependency>
       <dependency>
-          <groupId>org.projectlombok</groupId>
-          <artifactId>lombok</artifactId>
-          <version>${lombok.version}</version>
-          <scope>provided</scope>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <version>${lombok.version}</version>
+        <scope>provided</scope>
       </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-slf4j-impl</artifactId>
+        <version>${log4j2.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-core</artifactId>
+        <version>${log4j2.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-api</artifactId>
+        <version>${log4j2.version}</version>
+      </dependency>
+
       <!--Test dependencies-->
       <dependency>
         <groupId>junit</groupId>

@@ -3,9 +3,10 @@
     "configurations": [
         {
             "type": "java",
-            "name": "Runtime",
+            "name": "Launcher",
             "request": "launch",
-            "mainClass": "io.vertx.core.Launcher",
+            "mainClass": "org.mini.agent.runtime.Launcher",
+            "projectName": "runtime",
             "args": [
                 "run",
                 "org.mini.agent.runtime.MainVerticle",
@@ -13,7 +14,7 @@
                 "--appId",
                 "mini-agent-test",
                 "--namespace",
-                "bofei-dev",
+                "bofei-dev"
             ]
         }
     ]
