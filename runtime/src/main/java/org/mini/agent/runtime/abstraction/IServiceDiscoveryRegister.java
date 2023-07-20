@@ -2,7 +2,8 @@ package org.mini.agent.runtime.abstraction;
 
 import org.mini.agent.runtime.RuntimeContext;
 
-import io.vertx.core.Promise;
+import io.vertx.core.Future;
+import io.vertx.core.json.JsonObject;
 import io.vertx.servicediscovery.Record;
 
 /**
@@ -13,7 +14,7 @@ import io.vertx.servicediscovery.Record;
  *
  */
 public interface IServiceDiscoveryRegister {
-    void register(RuntimeContext ctx);
+    void register(RuntimeContext ctx, JsonObject config);
 
-    void getRecord(String appId, Promise<Record> promise);
+    Future<Record> getRecord(String appId);
 }

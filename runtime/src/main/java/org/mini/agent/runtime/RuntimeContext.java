@@ -41,8 +41,9 @@ public class RuntimeContext {
         this.config = config;
     }
 
-    public JsonObject getNameResolution() {
-        return config.getJsonObject("config").getJsonObject("nameResolution");
+    public JsonObject getConfig() {
+        return this.config;
+        // return config.getJsonObject("config").getJsonObject("nameResolution");
     }
 
     /**

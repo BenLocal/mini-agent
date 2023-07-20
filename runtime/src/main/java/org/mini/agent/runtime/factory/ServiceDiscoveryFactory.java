@@ -6,6 +6,7 @@ import java.util.Map;
 import org.mini.agent.runtime.MiniAgentException;
 import org.mini.agent.runtime.RuntimeContext;
 import org.mini.agent.runtime.abstraction.IServiceDiscoveryRegister;
+import org.mini.agent.runtime.impl.sd.NacosServiceDiscoveryRegister;
 
 /**
  * 
@@ -29,7 +30,8 @@ public class ServiceDiscoveryFactory {
             throw new MiniAgentException("not support service discovery type: " + type);
         }
 
-        register.register(ctx);
+        register.register(ctx, ctx.getConfig().getJsonObject("config")
+                .getJsonObject("nameResolution"));
     }
 
     public IServiceDiscoveryRegister getRegister() {
