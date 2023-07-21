@@ -66,12 +66,24 @@ public class RabbitMQMultiProducerSingleConsumer implements IMultiProducerSingle
 
     @Override
     public void consumer(String topic, JsonObject config, Handler<AsyncResult<RabbitMQMessage>> handler) {
-        client.basicConsumer(topic)
-                .onSuccess(x -> x.handler(msg -> handler.handle(Future.succeededFuture(msg)))
-                        .exceptionHandler(err -> handler.handle(Future.failedFuture(err))))
-                .onFailure(x -> {
-                    System.out.println("Cannot consume message");
-                    x.printStackTrace();
+        String consumerID = config.getString("consumerID", "topic");
+        String queueName = String.format("%s-%s", consumerID, topic);
+        client.exchangeDeclare(topic, "fanout", true, false)
+                .compose(x -> client.queueDeclare(queueName, true, false, true))
+                .compose(x -> client.queueBind(x.getQueue(), topic, "").map(x))
+                .compose(x -> client.basicConsumer(queueName).onSuccess(consumer -> {
+                    consumer.handler(message -> handler.handle(Future.succeededFuture(message)))
+                            .exceptionHandler(e -> handler.handle(Future.failedFuture(e)))
+                            .endHandler(v -> {
+                                // 删掉queue的时候，会触发endHandler
+                                // 需要重新注册consumer
+                            });
+                })).onComplete(x -> {
+                    if (x.succeeded()) {
+                        System.out.println("RabbitMQ successfully connected!");
+                    } else {
+                        System.out.println("Fail to connect to RabbitMQ " + x.cause().getMessage());
+                    }
                 });
     }
 
