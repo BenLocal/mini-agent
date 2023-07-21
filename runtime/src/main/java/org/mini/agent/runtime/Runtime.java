@@ -68,7 +68,9 @@ public class Runtime implements Verticle {
         this.appContext.setConfig(ar.result());
 
         // set service discovery
-        String nameResolutionType = this.appContext.getNameResolution().getString("type");
+        String nameResolutionType = this.appContext.getConfig()
+                .getJsonObject("nameResolution")
+                .getString("type");
         this.appContext.getServiceDiscoveryFactory()
                 .init(this.appContext, nameResolutionType);
 
