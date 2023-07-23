@@ -1,10 +1,11 @@
 package org.mini.agent.runtime.impl.mpsc;
 
-import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.mini.agent.runtime.RuntimeContext;
 import org.mini.agent.runtime.abstraction.IMultiProducerSingleConsumer;
 import org.mini.agent.runtime.abstraction.request.PublishRequest;
+import org.mini.agent.runtime.impl.StringHelper;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -13,6 +14,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.rabbitmq.RabbitMQClient;
 import io.vertx.rabbitmq.RabbitMQMessage;
 import io.vertx.rabbitmq.RabbitMQOptions;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 
@@ -21,74 +23,74 @@ import io.vertx.rabbitmq.RabbitMQOptions;
  * @Version 1.0
  *
  */
+@Slf4j
 public class RabbitMQMultiProducerSingleConsumer implements IMultiProducerSingleConsumer {
     private RabbitMQClient client;
-    private RuntimeContext ctx;
+
+    private AtomicBoolean isConnected = new AtomicBoolean(false);
 
     @Override
     public void init(RuntimeContext ctx, JsonObject config) {
-        this.ctx = ctx;
-
         RabbitMQOptions options = new RabbitMQOptions();
-        // config.setUri("amqp://10.1.72.41:5672/");
-        options.setApplicationLayerProtocols(Arrays.asList("AMQP"));
-        options.setHost("10.1.72.41");
-        options.setPort(5672);
-        options.setUser("root");
-        options.setPassword("123456");
-        options.setVirtualHost("testhost");
 
-        client = RabbitMQClient.create(ctx.getVertx(), config);
+        JsonObject metadata = config.getJsonObject("metadata");
+        JsonObject optionsConf = metadata.getJsonObject("options");
+
+        options.setUri(optionsConf.getString("uri"));
+        options.setApplicationLayerProtocols(StringHelper.toList(optionsConf.getString("protocols")));
+        options.setHost(optionsConf.getString("host"));
+        options.setPort(optionsConf.getInteger("port", 5672));
+        options.setUser(optionsConf.getString("user"));
+        options.setPassword(optionsConf.getString("password"));
+        options.setVirtualHost(optionsConf.getString("virtualHost"));
+
+        client = RabbitMQClient.create(ctx.getVertx(), options);
 
         // restart rabbitmq client
-        client.start(ar -> {
-            if (ar.succeeded()) {
-                System.out.println("RabbitMQ client started");
+        client.start(x -> {
+            if (x.failed()) {
+                log.error("rabbitmq client start failed", x.cause());
+                isConnected.set(false);
             } else {
-                System.out.println("Cannot start RabbitMQ client");
-                ar.cause().printStackTrace();
+                log.info("rabbitmq client start success");
+                isConnected.set(true);
             }
         });
-
         ctx.getVertx().setPeriodic(5000, x -> {
-            if (!client.isConnected()) {
-                client.restartConnect(0, ar -> {
-                    if (ar.succeeded()) {
-                        System.out.println("RabbitMQ client restarted");
-                    } else {
-                        System.out.println("Cannot restart RabbitMQ client");
-                        ar.cause().printStackTrace();
-                    }
-                });
+            if (!isConnected.get()) {
+                if (this.client.isOpenChannel()) {
+                    client.restartConnect(0, ar -> isConnected.set(ar.succeeded()));
+                } else {
+                    client.start(ar -> isConnected.set(ar.succeeded()));
+                }
             }
         });
     }
 
     @Override
-    public void consumer(String topic, JsonObject config, Handler<AsyncResult<RabbitMQMessage>> handler) {
-        String consumerID = config.getString("consumerID", "topic");
+    public Future<Void> consumer(String topic, JsonObject config, Handler<AsyncResult<RabbitMQMessage>> handler) {
+        String consumerID = config.getString("consumerID");
         String queueName = String.format("%s-%s", consumerID, topic);
-        client.exchangeDeclare(topic, "fanout", true, false)
+
+        String exchangeKind = config.getString("exchangeKind", "fanout");
+        String routingKey = config.getString("routingKey", "");
+
+        return client.exchangeDeclare(topic, exchangeKind, true, false)
                 .compose(x -> client.queueDeclare(queueName, true, false, true))
-                .compose(x -> client.queueBind(x.getQueue(), topic, "").map(x))
+                .compose(x -> client.queueBind(x.getQueue(), topic, routingKey).map(x))
                 .compose(x -> client.basicConsumer(queueName).onSuccess(consumer -> {
+                    log.info("consumer start, routingKey: {}", routingKey);
                     consumer.handler(message -> handler.handle(Future.succeededFuture(message)))
                             .exceptionHandler(e -> handler.handle(Future.failedFuture(e)))
                             .endHandler(v -> {
                                 // 删掉queue的时候，会触发endHandler
                                 // 需要重新注册consumer
                             });
-                })).onComplete(x -> {
-                    if (x.succeeded()) {
-                        System.out.println("RabbitMQ successfully connected!");
-                    } else {
-                        System.out.println("Fail to connect to RabbitMQ " + x.cause().getMessage());
-                    }
-                });
+                })).compose(x -> Future.succeededFuture());
     }
 
     @Override
-    public void producer(PublishRequest request) {
+    public Future<Void> producer(PublishRequest request) {
         // check exchange declare
 
         // second param is type, default is fanout, get from metadata with key
@@ -98,16 +100,9 @@ public class RabbitMQMultiProducerSingleConsumer implements IMultiProducerSingle
         // fourth param is autoDelete, default is true, get from metadata with key
         // "autoDelete"
         // fifth param is config, default is null, get from metadata with key "config"
-        client.exchangeDeclare(request.getTopic(), "fanout", true, false)
+        return client.exchangeDeclare(request.getTopic(), "fanout", true, false)
                 // second param is routingKey, default is "", get from metadata with key
                 // "routingKey"
-                .compose(x -> client.basicPublish(request.getTopic(), "", request.getPayload()))
-                .onSuccess(x -> {
-                    System.out.println("Message published");
-                })
-                .onFailure(x -> {
-                    System.out.println("Cannot publish message");
-                    x.printStackTrace();
-                });
+                .compose(x -> client.basicPublish(request.getTopic(), "", request.getPayload()));
     }
 }

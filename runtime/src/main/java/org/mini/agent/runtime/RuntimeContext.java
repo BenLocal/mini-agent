@@ -1,5 +1,6 @@
 package org.mini.agent.runtime;
 
+import org.mini.agent.runtime.factory.MultiProducerSingleConsumerFactory;
 import org.mini.agent.runtime.factory.ServiceDiscoveryFactory;
 
 import io.vertx.core.Context;
@@ -16,10 +17,14 @@ import io.vertx.core.json.JsonObject;
 public class RuntimeContext {
     private final String namespace;
     private final String appId;
-    private final ServiceDiscoveryFactory serviceDiscoveryFactory;
     private final Vertx vertx;
     private final Context vertxContext;
 
+    private final ServiceDiscoveryFactory serviceDiscoveryFactory;
+    private final MultiProducerSingleConsumerFactory multiProducerSingleConsumerFactory;
+
+
+    private JsonObject config;
     public RuntimeContext(Vertx vertx,
             Context vertxContext,
             String appId,
@@ -30,9 +35,8 @@ public class RuntimeContext {
         this.vertxContext = vertxContext;
 
         this.serviceDiscoveryFactory = new ServiceDiscoveryFactory();
+        this.multiProducerSingleConsumerFactory = new MultiProducerSingleConsumerFactory();
     }
-
-    private JsonObject config;
 
     /**
      * @param config the config to set
@@ -43,7 +47,6 @@ public class RuntimeContext {
 
     public JsonObject getConfig() {
         return this.config;
-        // return config.getJsonObject("config").getJsonObject("nameResolution");
     }
 
     /**
@@ -79,5 +82,12 @@ public class RuntimeContext {
      */
     public Context getVertxContext() {
         return vertxContext;
+    }
+
+    /**
+     * @return the multiProducerSingleConsumerFactory
+     */
+    public MultiProducerSingleConsumerFactory getMultiProducerSingleConsumerFactory() {
+        return multiProducerSingleConsumerFactory;
     }
 }

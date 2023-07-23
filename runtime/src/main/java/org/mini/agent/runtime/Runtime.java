@@ -1,13 +1,17 @@
 package org.mini.agent.runtime;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.mini.agent.runtime.config.RuntimeConfigLoader;
 
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
+import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 
@@ -16,6 +20,7 @@ import io.vertx.core.json.JsonObject;
  * @Version 1.0
  *
  */
+@Slf4j
 public class Runtime implements Verticle {
     private final Vertx vertx;
     private final RuntimeContext appContext;
@@ -38,9 +43,18 @@ public class Runtime implements Verticle {
     @Override
     public void start(Promise<Void> starter) throws Exception {
         // load runtime config
-        Promise<JsonObject> configPromise = Promise.promise();
-        configPromise.future().onComplete(ar -> innerStart(ar, starter));
-        loadConfig(configPromise);
+        RuntimeConfigLoader loader = new RuntimeConfigLoader();
+        loader.load(appContext)
+                .compose(this::innerStart)
+                .onComplete(ar -> {
+                    if (ar.succeeded()) {
+                        // start http api server
+                        new HttpApiServer(appContext).start(starter);
+                    } else {
+                        log.error("start runtime failed", ar.cause());
+                        starter.fail(ar.cause());
+                    }
+                });
     }
 
     @Override
@@ -48,33 +62,43 @@ public class Runtime implements Verticle {
         // ignore
     }
 
-    private void loadConfig(Promise<JsonObject> complete) {
-        new RuntimeConfigLoader().load(appContext, complete);
-    }
-
-    private void innerStart(AsyncResult<JsonObject> ar, Promise<Void> starter) {
-        if (ar.failed()) {
-            // Failed to retrieve the configuration
-            starter.fail(ar.cause());
-            return;
-        }
-
-        if (ar.result() == null) {
-            starter.fail("config is null");
-            return;
+    private Future<Void> innerStart(JsonObject config) {
+        if (config == null) {
+            return Future.failedFuture("config is null");
         }
 
         // config loaded
-        this.appContext.setConfig(ar.result());
+        this.appContext.setConfig(config);
 
         // set service discovery
-        String nameResolutionType = this.appContext.getConfig()
-                .getJsonObject("nameResolution")
-                .getString("type");
-        this.appContext.getServiceDiscoveryFactory()
-                .init(this.appContext, nameResolutionType);
+        JsonObject conf = this.appContext.getConfig()
+                .getJsonObject("config");
+        if (conf == null) {
+            return Future.failedFuture("config is null");
+        }
 
-        // start http api server
-        new HttpApiServer(appContext).start(starter);
+        JsonObject sdConf = conf.getJsonObject("nameResolution");
+        if (sdConf == null) {
+            return Future.failedFuture("serviceDiscovery config is null");
+        }
+
+        String nameResolutionType = sdConf.getString("type");
+        // this.appContext.getServiceDiscoveryFactory()
+        // .init(this.appContext, nameResolutionType);
+
+        // set multi producer single consumer
+        List<JsonObject> mpscConf = this.appContext.getConfig()
+                .getJsonArray("components")
+                .stream().filter(x -> {
+                    if (x instanceof JsonObject) {
+                        JsonObject item = (JsonObject) x;
+                        return "mpsc".equals(item.getString("type"));
+                    }
+                    return false;
+                }).map(x -> (JsonObject) x).collect(Collectors.toList());
+        this.appContext.getMultiProducerSingleConsumerFactory()
+                .init(this.appContext, mpscConf);
+
+        return Future.succeededFuture();
     }
 }

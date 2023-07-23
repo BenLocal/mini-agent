@@ -8,7 +8,7 @@ import org.mini.agent.runtime.RuntimeContext;
 import io.vertx.config.ConfigRetriever;
 import io.vertx.config.ConfigRetrieverOptions;
 import io.vertx.config.ConfigStoreOptions;
-import io.vertx.core.Promise;
+import io.vertx.core.Future;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
@@ -24,19 +24,15 @@ public class RuntimeConfigLoader {
 
     public RuntimeConfigLoader() {
         this.options = new ConfigRetrieverOptions();
-        addConfigDir(getConfigPath());
+
+        Path basePath = getConfigPath();
+
+        addConfigDir(basePath.toString());
+        addComponents(Paths.get(basePath.toString(), "components").toString());
     }
 
-    public void load(RuntimeContext ctx, Promise<JsonObject> complete) {
-        ConfigRetriever configRetriever = ConfigRetriever.create(ctx.getVertx(), options);
-        configRetriever.getConfig().onComplete(ar -> {
-            if (ar.failed()) {
-                // Failed to retrieve the configuration
-                complete.fail(ar.cause());
-            } else {
-                complete.complete(ar.result());
-            }
-        });
+    public Future<JsonObject> load(RuntimeContext ctx) {
+        return ConfigRetriever.create(ctx.getVertx(), options).getConfig();
     }
 
     private void addConfigDir(String path) {
@@ -49,17 +45,28 @@ public class RuntimeConfigLoader {
         this.options.addStore(dir);
     }
 
-    private String getConfigPath() {
+    private void addComponents(String path) {
+        ConfigStoreOptions components = new ConfigStoreOptions()
+                .setType("agent-components")
+                .setConfig(new JsonObject().put("path", path)
+                        .put("filesets", new JsonArray()
+                                .add(new JsonObject().put("pattern", "*.json")
+                                        .put("format", "json"))));
+
+        this.options.addStore(components);
+    }
+
+    private Path getConfigPath() {
         String path = System.getProperty("mini.agent.config.path");
         if (path != null && !path.isEmpty()) {
-            return path;
+            return Paths.get(path);
         }
 
         Path defaultPath = Paths.get(System.getProperty("user.home"), ".mini-agent");
         if (!Files.notExists(defaultPath)) {
-            return defaultPath.toString();
+            return defaultPath;
         }
 
-        return ".mini-agent";
+        return Paths.get(".mini-agent");
     }
 }

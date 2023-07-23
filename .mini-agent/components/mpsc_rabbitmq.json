@@ -1,0 +1,13 @@
+{
+    "type": "mpsc",
+    "name": "test1",
+    "future": "rabbitmq",
+    "topic": "test1",
+    "metadata": {
+        "routingKey": "test1-route",
+        "exchangeKind": "fanout",
+        "options": {
+            "uri": "amqp://admin:123456@127.0.0.1:5672"
+        }
+    }
+}

@@ -14,7 +14,7 @@
                 "--appId",
                 "mini-agent-test",
                 "--namespace",
-                "bofei-dev"
+                "public"
             ]
         }
     ]
