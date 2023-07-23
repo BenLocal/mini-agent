@@ -1,7 +1,5 @@
 package org.mini.agent.runtime.impl.mpsc;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.mini.agent.runtime.RuntimeContext;
 import org.mini.agent.runtime.abstraction.IMultiProducerSingleConsumer;
 import org.mini.agent.runtime.abstraction.request.PublishRequest;
@@ -27,41 +25,39 @@ import lombok.extern.slf4j.Slf4j;
 public class RabbitMQMultiProducerSingleConsumer implements IMultiProducerSingleConsumer {
     private RabbitMQClient client;
 
-    private AtomicBoolean isConnected = new AtomicBoolean(false);
-
     @Override
     public void init(RuntimeContext ctx, JsonObject config) {
-        RabbitMQOptions options = new RabbitMQOptions();
-
         JsonObject metadata = config.getJsonObject("metadata");
         JsonObject optionsConf = metadata.getJsonObject("options");
 
+        RabbitMQOptions options = new RabbitMQOptions();
         options.setUri(optionsConf.getString("uri"));
         options.setApplicationLayerProtocols(StringHelper.toList(optionsConf.getString("protocols")));
         options.setHost(optionsConf.getString("host"));
         options.setPort(optionsConf.getInteger("port", 5672));
-        options.setUser(optionsConf.getString("user"));
+        options.setUser(optionsConf.getString("username"));
         options.setPassword(optionsConf.getString("password"));
         options.setVirtualHost(optionsConf.getString("virtualHost"));
 
-        client = RabbitMQClient.create(ctx.getVertx(), options);
+        this.client = RabbitMQClient.create(ctx.getVertx(), options);
 
         // restart rabbitmq client
-        client.start(x -> {
+        this.client.start(x -> {
             if (x.failed()) {
                 log.error("rabbitmq client start failed", x.cause());
-                isConnected.set(false);
             } else {
                 log.info("rabbitmq client start success");
-                isConnected.set(true);
             }
         });
         ctx.getVertx().setPeriodic(5000, x -> {
-            if (!isConnected.get()) {
+            if (!this.client.isConnected()) {
                 if (this.client.isOpenChannel()) {
-                    client.restartConnect(0, ar -> isConnected.set(ar.succeeded()));
+                    this.client.restartConnect(0, ar -> {
+                    });
                 } else {
-                    client.start(ar -> isConnected.set(ar.succeeded()));
+                    this.client.stop()
+                            .compose(ar -> this.client.start())
+                            .onComplete(ar -> log.info("rabbitmq client restart success"));
                 }
             }
         });
@@ -73,9 +69,9 @@ public class RabbitMQMultiProducerSingleConsumer implements IMultiProducerSingle
         String queueName = String.format("%s-%s", consumerID, topic);
 
         String exchangeKind = config.getString("exchangeKind", "fanout");
-        String routingKey = config.getString("routingKey", "");
+        String routingKey = config.getJsonObject("metadata").getString("routingKey", "");
 
-        return client.exchangeDeclare(topic, exchangeKind, true, false)
+        return this.client.exchangeDeclare(topic, exchangeKind, true, false)
                 .compose(x -> client.queueDeclare(queueName, true, false, true))
                 .compose(x -> client.queueBind(x.getQueue(), topic, routingKey).map(x))
                 .compose(x -> client.basicConsumer(queueName).onSuccess(consumer -> {

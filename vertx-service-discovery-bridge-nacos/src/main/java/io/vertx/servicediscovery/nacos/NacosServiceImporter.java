@@ -64,7 +64,7 @@ public class NacosServiceImporter implements ServiceImporter {
         int regPort = registerConfig.getInteger("port");
         int retryInterval = registerConfig.getInteger("retryInterval", -1);
 
-        vertx.executeBlocking(promise -> {
+        vertx.<Void>executeBlocking(promise -> {
             // create NamingService
             try {
                 Properties properties = new Properties();
@@ -72,7 +72,7 @@ public class NacosServiceImporter implements ServiceImporter {
                 properties.setProperty(NacosConstants.NAMESPACE, namespace);
                 nacos = NamingFactory.createNamingService(properties);
             } catch (NacosException e) {
-                future.fail(e);
+                promise.fail(e);
                 return;
             }
 
@@ -85,7 +85,7 @@ public class NacosServiceImporter implements ServiceImporter {
             }
 
             // scan
-            scan(future, groupName);
+            scan(promise, groupName);
             if (scanInterval > 0) {
                 vertx.setPeriodic(scanInterval, t -> scan(null, groupName));
             }
@@ -129,18 +129,19 @@ public class NacosServiceImporter implements ServiceImporter {
 
         Set<String> servers = new HashSet<>();
         int pageNo = 1;
-        while (true) {
-            try {
-                ListView<String> serves = nacos.getServicesOfServer(pageNo, 100, groupName);
-                if (serves.getCount() == 0) {
-                    break;
-                }
+
+        try {
+            ListView<String> serves = nacos.getServicesOfServer(pageNo, 100, groupName);
+            if (!serves.getData().isEmpty()) {
                 servers.addAll(serves.getData());
-                pageNo++;
-            } catch (NacosException e) {
-                // ignore and retry
-                break;
             }
+
+            if (serves.getCount() > 100) {
+                // pageNo++;
+                // TODO
+            }
+        } catch (NacosException e) {
+            // ignore and retry
         }
 
         if (!servers.isEmpty()) {

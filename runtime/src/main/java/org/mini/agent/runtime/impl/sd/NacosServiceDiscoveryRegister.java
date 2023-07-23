@@ -29,11 +29,6 @@ public class NacosServiceDiscoveryRegister implements IServiceDiscoveryRegister 
                         .put(NacosConstants.NAMESPACE, ctx.getNamespace())
                         .put(NacosConstants.SERVICE_NAME, ctx.getAppId()),
                 x -> {
-                    // if (x.succeeded()) {
-                    // // started
-                    // } else {
-                    // // failed to start
-                    // }
                 });
     }
 

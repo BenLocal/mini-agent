@@ -83,8 +83,8 @@ public class Runtime implements Verticle {
         }
 
         String nameResolutionType = sdConf.getString("type");
-        // this.appContext.getServiceDiscoveryFactory()
-        // .init(this.appContext, nameResolutionType);
+        this.appContext.getServiceDiscoveryFactory()
+                .init(this.appContext, nameResolutionType);
 
         // set multi producer single consumer
         List<JsonObject> mpscConf = this.appContext.getConfig()
