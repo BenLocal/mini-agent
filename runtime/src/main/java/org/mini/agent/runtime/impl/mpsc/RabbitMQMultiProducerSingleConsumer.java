@@ -88,7 +88,6 @@ public class RabbitMQMultiProducerSingleConsumer implements IMultiProducerSingle
     @Override
     public Future<Void> producer(PublishRequest request) {
         // check exchange declare
-
         // second param is type, default is fanout, get from metadata with key
         // "exchangeKind"
         // third param is durable, default is false, get from metadata with key

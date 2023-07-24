@@ -1,7 +1,7 @@
 version: "3"
 services:
   nacos:
-    image: centralx/nacos-server
+    image: ${image_name:-nacos/nacos-server}
     container_name: nacos-standalone
     environment:
       - PREFER_HOST_MODE=hostname
