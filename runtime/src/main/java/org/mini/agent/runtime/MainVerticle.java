@@ -28,7 +28,10 @@ public class MainVerticle extends AbstractVerticle {
                 .addOption(new Option()
                         .setLongName("namespace")
                         .setShortName("n")
-                        .setDescription("The namespace of the application"));
+                        .setDescription("The namespace of the application"))
+                .addOption(new Option()
+                        .setLongName("agent-http-port")
+                        .setDescription("The port of the agent http server"));
         StringBuilder builder = new StringBuilder();
         cli.usage(builder);
 
@@ -43,9 +46,12 @@ public class MainVerticle extends AbstractVerticle {
             System.exit(1);
             return;
         }
-        String appId = commandLine.getOptionValue("appId");
-        String namespace = commandLine.getOptionValue("namespace");
-        RuntimeContext appContext = new RuntimeContext(vertx, context, appId, namespace);
+
+        RuntimeContext appContext = new RuntimeContext(vertx,
+                context,
+                commandLine.getOptionValue("appId"),
+                commandLine.getOptionValue("namespace"),
+                commandLine.getOptionValue("agent-http-port"));
 
         log.info("Launcher start");
         log.info(builder.toString());

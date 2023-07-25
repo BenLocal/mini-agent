@@ -17,25 +17,29 @@ import io.vertx.core.json.JsonObject;
 public class RuntimeContext {
     private final String namespace;
     private final String appId;
+    private final String agentHttpPort;
+
     private final Vertx vertx;
     private final Context vertxContext;
 
     private final ServiceDiscoveryFactory serviceDiscoveryFactory;
     private final MultiProducerSingleConsumerFactory multiProducerSingleConsumerFactory;
 
-
     private JsonObject config;
+
     public RuntimeContext(Vertx vertx,
             Context vertxContext,
             String appId,
-            String namespace) {
+            String namespace,
+            String agentHttpPort) {
         this.appId = appId;
         this.namespace = namespace;
         this.vertx = vertx;
         this.vertxContext = vertxContext;
+        this.agentHttpPort = agentHttpPort;
 
         this.serviceDiscoveryFactory = new ServiceDiscoveryFactory();
-        this.multiProducerSingleConsumerFactory = new MultiProducerSingleConsumerFactory();
+        this.multiProducerSingleConsumerFactory = new MultiProducerSingleConsumerFactory(vertx);
     }
 
     /**
@@ -89,5 +93,12 @@ public class RuntimeContext {
      */
     public MultiProducerSingleConsumerFactory getMultiProducerSingleConsumerFactory() {
         return multiProducerSingleConsumerFactory;
+    }
+
+    /**
+     * @return the agentHttpPort
+     */
+    public String getAgentHttpPort() {
+        return agentHttpPort;
     }
 }
