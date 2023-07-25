@@ -54,6 +54,7 @@ public class HttpApiServer {
 
     private void addApiProxyRoute() {
         this.router.route("/invoke/:appId/method/*").handler(this::invokeMethod);
+        this.router.post("/mpsc/producer/:name").handler(this::mpscProducer)
     }
 
     private void invokeMethod(RoutingContext ctx) {
@@ -92,5 +93,9 @@ public class HttpApiServer {
                         request.response().setStatusCode(500).send();
                     }
                 });
+    }
+
+    private void mpscProducer(RoutingContext ctx) {
+        String name = ctx.pathParam("name");
     }
 }

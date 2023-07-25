@@ -1,0 +1,10 @@
+version: "3"
+services:
+  miniagent-demo:
+    build:
+      context: "."
+      dockerfile: "Dockerfile"
+    image: mini-agent-examples-demo
+    container_name: mini-agent-examples-demo
+    ports:
+      - "9123:9123"

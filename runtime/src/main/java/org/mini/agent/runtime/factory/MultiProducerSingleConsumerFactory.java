@@ -13,6 +13,7 @@ import org.mini.agent.runtime.impl.mpsc.RabbitMQMultiProducerSingleConsumer;
 
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.shareddata.AsyncMap;
 import io.vertx.ext.web.client.WebClient;
@@ -33,7 +34,7 @@ public class MultiProducerSingleConsumerFactory {
     private static Map<String, IMultiProducerSingleConsumer> mpscMap = new HashMap<>();
 
     private final AsyncMap<String, ConsumerInfo> mpscs;
-    private final Vertx vertx;
+    // private final Vertx vertx;
     private final WebClient webClient;
 
     static {
@@ -41,7 +42,7 @@ public class MultiProducerSingleConsumerFactory {
     }
 
     public MultiProducerSingleConsumerFactory(Vertx vertx) {
-        this.vertx = vertx;
+        // this.vertx = vertx;
         this.webClient = WebClient.create(vertx);
         this.mpscs = vertx.sharedData().<String, ConsumerInfo>getLocalAsyncMap("service.mpsc").result();
     }
@@ -78,7 +79,7 @@ public class MultiProducerSingleConsumerFactory {
 
     private Future<Void> getTopics(RuntimeContext ctx) {
         // get all topic
-        return webClient.get(8080, "127.0.0.1", "/some-uri")
+        return webClient.get(ctx.getAgentHttpPort(), "127.0.0.1", "/api/mpsc/topics")
                 .as(BodyCodec.jsonObject())
                 .send()
                 .compose(resp -> {
@@ -88,19 +89,26 @@ public class MultiProducerSingleConsumerFactory {
                         return Future.failedFuture("get topic failed, status code: " + resp.statusCode());
                     }
                     JsonObject body = resp.body();
-                    if (body.getInteger("code") != 0) {
-                        log.error("get topic failed, code: {}", body.getInteger("code"));
-                        return Future.failedFuture("get topic failed, code: " + body.getInteger("code"));
+                    if (body == null) {
+                        log.error("get topic failed with null body");
+                        return Future.failedFuture("get topic failed with null body");
                     }
 
-                    List<JsonObject> topics = body.getJsonArray("data").stream()
+                    JsonArray topicJson = body.getJsonArray("topics");
+                    if (topicJson == null || topicJson.isEmpty()) {
+                        log.error("get topic failed with null topics");
+                        return Future.failedFuture("get topic failed with null topics");
+                    }
+
+                    List<JsonObject> topics = topicJson.stream()
                             .map(JsonObject.class::cast)
                             .collect(Collectors.toList());
 
                     List<Future<Void>> results = new ArrayList<>();
                     for (JsonObject topic : topics) {
                         String topicName = topic.getString("topic");
-                        results.add(this.mpscs.get(topicName).compose(item -> {
+                        String name = topic.getString("name");
+                        results.add(this.mpscs.get(name).compose(item -> {
                             JsonObject conf = item.getConfig()
                                     .put("consumerID", ctx.getAppId());
                             return item.getMpsc().consumer(topicName, conf, ar -> {

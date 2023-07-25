@@ -3,7 +3,14 @@
     "configurations": [
         {
             "type": "java",
-            "name": "Launcher",
+            "name": "Demo",
+            "request": "launch",
+            "projectName": "demo",
+            "mainClass": "org.mini.agent.examples.demo.Starter"
+        },
+        {
+            "type": "java",
+            "name": "Runtime",
             "request": "launch",
             "mainClass": "org.mini.agent.runtime.Launcher",
             "projectName": "runtime",
@@ -14,7 +21,9 @@
                 "--appId",
                 "mini-agent-test",
                 "--namespace",
-                "public"
+                "public",
+                "--agent-http-port",
+                9123
             ]
         }
     ]

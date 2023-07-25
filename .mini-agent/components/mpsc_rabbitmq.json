@@ -2,7 +2,6 @@
     "type": "mpsc",
     "name": "test1",
     "future": "rabbitmq",
-    "topic": "test1",
     "metadata": {
         "routingKey": "test1-route",
         "exchangeKind": "fanout",
