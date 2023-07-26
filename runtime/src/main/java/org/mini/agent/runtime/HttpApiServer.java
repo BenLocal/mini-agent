@@ -1,5 +1,8 @@
 package org.mini.agent.runtime;
 
+import org.mini.agent.runtime.abstraction.request.PublishRequest;
+import org.mini.agent.runtime.impl.StringHelper;
+
 import io.vertx.circuitbreaker.CircuitBreaker;
 import io.vertx.circuitbreaker.CircuitBreakerOptions;
 import io.vertx.core.Future;
@@ -54,7 +57,7 @@ public class HttpApiServer {
 
     private void addApiProxyRoute() {
         this.router.route("/invoke/:appId/method/*").handler(this::invokeMethod);
-        this.router.post("/mpsc/producer/:name").handler(this::mpscProducer)
+        this.router.post("/mpsc/producer/:name/:topic").handler(this::mpscProducer);
     }
 
     private void invokeMethod(RoutingContext ctx) {
@@ -97,5 +100,20 @@ public class HttpApiServer {
 
     private void mpscProducer(RoutingContext ctx) {
         String name = ctx.pathParam("name");
+        String topic = ctx.pathParam("topic");
+        if (StringHelper.isEmpty(name) || StringHelper.isEmpty(topic)) {
+            ctx.response().setStatusCode(400).end("name and topic is required");
+            return;
+        }
+
+        ctx.request().bodyHandler(buffer -> context.getMultiProducerSingleConsumerFactory()
+                .send(name, new PublishRequest()
+                        .setTopic(topic)
+                        .setPayload(buffer))
+                .onSuccess(x -> ctx.response().end())
+                .onFailure(err -> {
+                    log.error("send message failed", err);
+                    ctx.response().setStatusCode(500).end(err.getMessage());
+                }));
     }
 }

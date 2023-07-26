@@ -1,9 +1,5 @@
-FROM adoptopenjdk/openjdk8:jre8u382-b05-alpine
-
+FROM mini-agent-runtime:latest
 WORKDIR /app
-
 ENV TZ Asia/Shanghai
-
 ADD ./target/demo-1.0-SNAPSHOT-fat.jar ./app.jar
-
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["nohup", "/usr/bin/supervisord","-c", "/etc/supervisord.conf", "java", "-jar", "app.jar"]

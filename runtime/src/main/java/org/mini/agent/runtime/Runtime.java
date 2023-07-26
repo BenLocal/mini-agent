@@ -99,6 +99,10 @@ public class Runtime implements Verticle {
         this.appContext.getMultiProducerSingleConsumerFactory()
                 .init(this.appContext, mpscConf);
 
+        // set http agent bridge
+        this.appContext.getHttpAgentBridge()
+                .init(this.appContext);
+
         return Future.succeededFuture();
     }
 }

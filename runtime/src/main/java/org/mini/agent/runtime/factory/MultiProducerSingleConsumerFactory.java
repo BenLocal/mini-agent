@@ -9,10 +9,12 @@ import java.util.stream.Collectors;
 
 import org.mini.agent.runtime.RuntimeContext;
 import org.mini.agent.runtime.abstraction.IMultiProducerSingleConsumer;
+import org.mini.agent.runtime.abstraction.request.PublishRequest;
 import org.mini.agent.runtime.impl.mpsc.RabbitMQMultiProducerSingleConsumer;
 
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.shareddata.AsyncMap;
@@ -47,15 +49,23 @@ public class MultiProducerSingleConsumerFactory {
         this.mpscs = vertx.sharedData().<String, ConsumerInfo>getLocalAsyncMap("service.mpsc").result();
     }
 
-    public IMultiProducerSingleConsumer get(String type) {
-        return mpscMap.get(type);
-    }
-
     public Future<Void> init(RuntimeContext ctx, List<JsonObject> items) {
         // get all mpsc config
         return createConfs(ctx, items)
                 // get all topic
                 .compose(x -> getTopics(ctx));
+    }
+
+    public Future<Void> send(String name, PublishRequest request) {
+        return this.mpscs.get(name)
+                .compose(item -> {
+                    IMultiProducerSingleConsumer mpsc = item.getMpsc();
+                    if (mpsc == null) {
+                        return Future.failedFuture("can not find mpsc");
+                    }
+
+                    return mpsc.producer(request);
+                });
     }
 
     private Future<Void> createConfs(RuntimeContext ctx, List<JsonObject> items) {
@@ -79,7 +89,9 @@ public class MultiProducerSingleConsumerFactory {
 
     private Future<Void> getTopics(RuntimeContext ctx) {
         // get all topic
-        return webClient.get(ctx.getAgentHttpPort(), "127.0.0.1", "/api/mpsc/topics")
+        return webClient.get(ctx.getAgentHttpPort(),
+                ctx.getAgentServerHost(),
+                "/api/mpsc/topics")
                 .as(BodyCodec.jsonObject())
                 .send()
                 .compose(resp -> {
@@ -108,6 +120,7 @@ public class MultiProducerSingleConsumerFactory {
                     for (JsonObject topic : topics) {
                         String topicName = topic.getString("topic");
                         String name = topic.getString("name");
+                        String callback = topic.getString("callback");
                         results.add(this.mpscs.get(name).compose(item -> {
                             JsonObject conf = item.getConfig()
                                     .put("consumerID", ctx.getAppId());
@@ -116,7 +129,9 @@ public class MultiProducerSingleConsumerFactory {
                                     log.error("consumer {} failed", topic, ar.cause());
                                     return;
                                 }
-                                ctx.getVertx().eventBus().send("mpsc", ar.result());
+
+                                ctx.getHttpAgentBridge().publish("mpsc.publish",
+                                        createConsumerMessage(callback, topicName, name, ar.result().body()));
                             });
                         }));
                     }
@@ -124,6 +139,18 @@ public class MultiProducerSingleConsumerFactory {
                     return Future.all(results)
                             .mapEmpty();
                 });
+    }
+
+    private JsonObject createConsumerMessage(String callback,
+            String topicName, String name,
+            Buffer message) {
+        JsonObject data = new JsonObject()
+                .put("topic", topicName)
+                .put("name", name)
+                .put("msg", message);
+
+        return new JsonObject().put("callback", callback)
+                .put("data", data);
     }
 
     private static class ConsumerInfo implements Serializable {

@@ -1,0 +1,11 @@
+version: "3"
+services:
+  miniagent-runtime:
+    build:
+      context: "."
+      dockerfile: "Dockerfile"
+    image: mini-agent-runtime
+    container_name: mini-agent-runtime
+    ports:
+      - "9123:9123"
+      - "8888:8888"
