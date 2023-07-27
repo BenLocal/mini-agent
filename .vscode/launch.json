@@ -23,7 +23,11 @@
                 "--namespace",
                 "public",
                 "--agent-http-port",
-                9123
+                9123,
+                "--",
+                "java",
+                "-jar",
+                "aa.jar"
             ]
         }
     ]

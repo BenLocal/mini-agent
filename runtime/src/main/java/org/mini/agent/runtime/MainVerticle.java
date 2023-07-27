@@ -1,7 +1,11 @@
 package org.mini.agent.runtime;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
+import io.vertx.core.cli.Argument;
 import io.vertx.core.cli.CLI;
 import io.vertx.core.cli.CommandLine;
 import io.vertx.core.cli.Option;
@@ -53,9 +57,9 @@ public class MainVerticle extends AbstractVerticle {
                 commandLine.getOptionValue("namespace"),
                 commandLine.getOptionValue("agent-http-port"));
 
-        log.info("Launcher start");
-        log.info(builder.toString());
-        // log.info("start runtime for app {} in namespace {}", appId, namespace);
+        log.info("Launcher starting runtime for app {} in namespace {}",
+                appContext.getAppId(),
+                appContext.getNamespace());
         vertx.deployVerticle(new Runtime(vertx, appContext));
     }
 }

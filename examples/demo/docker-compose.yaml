@@ -6,5 +6,11 @@ services:
       dockerfile: "Dockerfile"
     image: mini-agent-examples-demo
     container_name: mini-agent-examples-demo
+    volumes:
+      - ../../.mini-agent:/etc/mini-agent
+    environment:
+      - ARUNTIME_APP_ID=test1
+      - ARUNTIME_AGENT_HTTP_PORT=9123
     ports:
       - "9123:9123"
+      - "8888:8888"

@@ -46,7 +46,11 @@ public class NacosServiceImporter implements ServiceImporter {
         this.vertx = vertx;
 
         String groupName = configuration.getString(NacosConstants.GROUP_NAME);
-        namespace = configuration.getString(NacosConstants.NAMESPACE);
+        namespace = configuration.getString(NacosConstants.NAMESPACE, "public");
+        if (namespace == null || namespace.isEmpty()) {
+            namespace = "public";
+        }
+
         String serviceName = configuration.getString(NacosConstants.SERVICE_NAME);
         int scanInterval = configuration.getInteger("scanInterval", -1);
 
