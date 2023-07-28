@@ -1,5 +1,6 @@
 package org.mini.agent.runtime;
 
+import org.mini.agent.runtime.factory.InputBindingFactory;
 import org.mini.agent.runtime.factory.MultiProducerSingleConsumerFactory;
 import org.mini.agent.runtime.factory.OutputBindingFactory;
 import org.mini.agent.runtime.factory.ServiceDiscoveryFactory;
@@ -27,8 +28,10 @@ public class RuntimeContext {
 
     private final ServiceDiscoveryFactory serviceDiscoveryFactory;
     private final MultiProducerSingleConsumerFactory multiProducerSingleConsumerFactory;
-    private final HttpAgentBridge httpAgentBridge;
     private final OutputBindingFactory outputBindingFactory;
+    private final InputBindingFactory inputBindingFactory;
+
+    private final HttpAgentBridge httpAgentBridge;
 
     private JsonObject config;
 
@@ -47,8 +50,10 @@ public class RuntimeContext {
 
         this.serviceDiscoveryFactory = new ServiceDiscoveryFactory();
         this.multiProducerSingleConsumerFactory = new MultiProducerSingleConsumerFactory(vertx);
-        this.httpAgentBridge = new HttpAgentBridge(vertx);
         this.outputBindingFactory = new OutputBindingFactory();
+        this.inputBindingFactory = new InputBindingFactory();
+
+        this.httpAgentBridge = new HttpAgentBridge(vertx);
     }
 
     /**
@@ -127,5 +132,12 @@ public class RuntimeContext {
 
     public OutputBindingFactory getOutputBindingFactory() {
         return outputBindingFactory;
+    }
+
+    /**
+     * @return the inputBindingFactory
+     */
+    public InputBindingFactory getInputBindingFactory() {
+        return inputBindingFactory;
     }
 }

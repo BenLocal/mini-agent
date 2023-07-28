@@ -1,12 +1,12 @@
 package org.mini.agent.runtime.factory;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.mini.agent.runtime.MiniAgentException;
 import org.mini.agent.runtime.RuntimeContext;
 import org.mini.agent.runtime.abstraction.IServiceDiscoveryRegister;
 import org.mini.agent.runtime.impl.sd.NacosServiceDiscoveryRegister;
+
+import io.vertx.core.Future;
+import io.vertx.core.json.JsonObject;
 
 /**
  * 
@@ -15,26 +15,26 @@ import org.mini.agent.runtime.impl.sd.NacosServiceDiscoveryRegister;
  * @Version 1.0
  *
  */
-public class ServiceDiscoveryFactory {
-    private static Map<String, IServiceDiscoveryRegister> serviceDiscoveryMap = new HashMap<>();
-
+public class ServiceDiscoveryFactory extends BaseFactory<IServiceDiscoveryRegister> {
     private IServiceDiscoveryRegister register;
 
-    static {
-        serviceDiscoveryMap.put("nacos", new NacosServiceDiscoveryRegister());
+    public IServiceDiscoveryRegister getRegister() {
+        return this.register;
     }
 
-    public void init(RuntimeContext ctx, String type) throws MiniAgentException {
-        register = serviceDiscoveryMap.get(type);
-        if (register == null) {
-            throw new MiniAgentException("not support service discovery type: " + type);
+    @Override
+    public Future<Void> init(RuntimeContext ctx, JsonObject config) {
+        String type = config.getString("type");
+        this.register = this.getSingleton(type);
+        if (this.register == null) {
+            return Future.failedFuture(new MiniAgentException("not support service discovery type: " + type));
         }
 
-        register.register(ctx, ctx.getConfig().getJsonObject("config")
-                .getJsonObject("nameResolution"));
+        return this.register.register(ctx, config);
     }
 
-    public IServiceDiscoveryRegister getRegister() {
-        return register;
+    @Override
+    public void register(RuntimeContext ctx) {
+        this.addRegister("nacos", NacosServiceDiscoveryRegister::new);
     }
 }

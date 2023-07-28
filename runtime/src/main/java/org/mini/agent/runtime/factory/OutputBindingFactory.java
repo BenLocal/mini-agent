@@ -1,7 +1,6 @@
 package org.mini.agent.runtime.factory;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.mini.agent.runtime.RuntimeContext;
 import org.mini.agent.runtime.abstraction.IOutputBinding;
@@ -20,19 +19,25 @@ import io.vertx.core.json.JsonObject;
  * @Version 1.0
  *
  */
-public class OutputBindingFactory {
-    private static Map<String, IOutputBinding> outputBindings = new HashMap<>();
+public class OutputBindingFactory extends BaseFactory<IOutputBinding> {
 
-    static {
-        outputBindings.put("http", new HttpOutputBinding());
+    @Override
+    public Future<Void> init(RuntimeContext ctx, JsonObject config) {
+        return Future
+                .all(this.getSingletonList().stream().map(binding -> {
+                    binding.init(ctx, null);
+                    return Future.succeededFuture();
+                }).collect(Collectors.toList()))
+                .mapEmpty();
     }
 
-    public void init(RuntimeContext ctx) {
-        outputBindings.values().forEach(binding -> binding.init(ctx));
+    @Override
+    public void register(RuntimeContext ctx) {
+        this.addRegister("http", HttpOutputBinding::new);
     }
 
     public Future<OutputBindingResponse> invoke(String name, Buffer body) {
-        IOutputBinding binding = outputBindings.get(name);
+        IOutputBinding binding = this.getSingleton(name);
         if (binding == null) {
             return Future.failedFuture(new UnsupportedOperationException("Unsupported output binding: " + name));
         }

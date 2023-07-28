@@ -2,9 +2,7 @@ package org.mini.agent.runtime.factory;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.mini.agent.runtime.RuntimeContext;
@@ -32,16 +30,9 @@ import lombok.extern.slf4j.Slf4j;
  * 
  */
 @Slf4j
-public class MultiProducerSingleConsumerFactory {
-    private static Map<String, IMultiProducerSingleConsumer> mpscMap = new HashMap<>();
-
+public class MultiProducerSingleConsumerFactory extends BaseFactory<IMultiProducerSingleConsumer> {
     private final AsyncMap<String, ConsumerInfo> mpscs;
-    // private final Vertx vertx;
     private final WebClient webClient;
-
-    static {
-        mpscMap.put("rabbitmq", new RabbitMQMultiProducerSingleConsumer());
-    }
 
     public MultiProducerSingleConsumerFactory(Vertx vertx) {
         // this.vertx = vertx;
@@ -49,11 +40,27 @@ public class MultiProducerSingleConsumerFactory {
         this.mpscs = vertx.sharedData().<String, ConsumerInfo>getLocalAsyncMap("service.mpsc").result();
     }
 
-    public Future<Void> init(RuntimeContext ctx, List<JsonObject> items) {
+    @Override
+    public Future<Void> init(RuntimeContext ctx, JsonObject config) {
+        List<JsonObject> items = config
+                .getJsonArray("components")
+                .stream().filter(x -> {
+                    if (x instanceof JsonObject) {
+                        JsonObject item = (JsonObject) x;
+                        return "mpsc".equals(item.getString("type"));
+                    }
+                    return false;
+                }).map(x -> (JsonObject) x).collect(Collectors.toList());
+
         // get all mpsc config
         return createConfs(ctx, items)
                 // get all topic
                 .compose(x -> getTopics(ctx));
+    }
+
+    @Override
+    public void register(RuntimeContext ctx) {
+        this.addRegister("rabbitmq", RabbitMQMultiProducerSingleConsumer::new);
     }
 
     public Future<Void> send(String name, PublishRequest request) {
@@ -71,7 +78,7 @@ public class MultiProducerSingleConsumerFactory {
     private Future<Void> createConfs(RuntimeContext ctx, List<JsonObject> items) {
         for (JsonObject conf : items) {
             String future = conf.getString("future");
-            IMultiProducerSingleConsumer mpsc = mpscMap.get(future);
+            IMultiProducerSingleConsumer mpsc = this.getScope(future);
             if (mpsc == null) {
                 log.info("not support mpsc future: {}", future);
                 return Future.failedFuture("not support mpsc future: " + future);

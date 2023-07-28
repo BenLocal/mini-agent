@@ -1,8 +1,5 @@
 package org.mini.agent.runtime;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 import org.mini.agent.runtime.config.RuntimeConfigLoader;
 
 import io.vertx.core.Context;
@@ -70,6 +67,26 @@ public class Runtime implements Verticle {
         // config loaded
         this.appContext.setConfig(config);
 
+        // set http agent bridge
+        this.appContext.getHttpAgentBridge()
+                .init(this.appContext);
+
+        return Future.all(initServiceDiscovery(),
+                initMultiProducerSingleConsumer(),
+                initOutputBinding())
+                .onComplete(ar -> {
+                    if (ar.succeeded()) {
+                        log.info("runtime started");
+                    } else {
+                        log.error("runtime start failed", ar.cause());
+                    }
+                }).mapEmpty();
+    }
+
+    private Future<Void> initServiceDiscovery() {
+        // register service discovery
+        this.appContext.getServiceDiscoveryFactory().register(this.appContext);
+
         // set service discovery
         JsonObject conf = this.appContext.getConfig()
                 .getJsonObject("config");
@@ -82,31 +99,25 @@ public class Runtime implements Verticle {
             return Future.failedFuture("serviceDiscovery config is null");
         }
 
-        String nameResolutionType = sdConf.getString("type");
-        this.appContext.getServiceDiscoveryFactory()
-                .init(this.appContext, nameResolutionType);
+        return this.appContext.getServiceDiscoveryFactory()
+                .init(this.appContext, sdConf);
+    }
 
-        // set multi producer single consumer
-        List<JsonObject> mpscConf = this.appContext.getConfig()
-                .getJsonArray("components")
-                .stream().filter(x -> {
-                    if (x instanceof JsonObject) {
-                        JsonObject item = (JsonObject) x;
-                        return "mpsc".equals(item.getString("type"));
-                    }
-                    return false;
-                }).map(x -> (JsonObject) x).collect(Collectors.toList());
-        this.appContext.getMultiProducerSingleConsumerFactory()
-                .init(this.appContext, mpscConf);
+    // set multi producer single consumer
+    private Future<Void> initMultiProducerSingleConsumer() {
+        // register multi producer single consumer
+        this.appContext.getMultiProducerSingleConsumerFactory().register(this.appContext);
 
-        // set http agent bridge
-        this.appContext.getHttpAgentBridge()
-                .init(this.appContext);
+        return this.appContext.getMultiProducerSingleConsumerFactory()
+                .init(this.appContext, this.appContext.getConfig());
+    }
 
-        // set out bridge
-        this.appContext.getOutputBindingFactory()
-                .init(this.appContext);
+    // set out bridge
+    private Future<Void> initOutputBinding() {
+        // register output binding
+        this.appContext.getMultiProducerSingleConsumerFactory().register(this.appContext);
 
-        return Future.succeededFuture();
+        return this.appContext.getOutputBindingFactory()
+                .init(this.appContext, this.appContext.getConfig());
     }
 }

@@ -1,0 +1,8 @@
+{
+    "type": "binding",
+    "name": "cron_test",
+    "future": "cron",
+    "metadata": {
+        "aaaa": "aaaa"
+    }
+}

@@ -9,6 +9,7 @@ import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpRequest;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
@@ -24,7 +25,7 @@ public class HttpOutputBinding implements IOutputBinding {
     private WebClient client;
 
     @Override
-    public void init(RuntimeContext ctx) {
+    public void init(RuntimeContext ctx, JsonObject config) {
         this.client = WebClient.create(ctx.getVertx());
     }
 

@@ -22,14 +22,14 @@ public class NacosServiceDiscoveryRegister implements IServiceDiscoveryRegister 
     private ServiceDiscovery serviceDiscovery;
 
     @Override
-    public void register(RuntimeContext ctx, JsonObject config) {
+    public Future<Void> register(RuntimeContext ctx, JsonObject config) {
         Vertx vertx = ctx.getVertx();
-        serviceDiscovery = ServiceDiscovery.create(vertx).registerServiceImporter(new NacosServiceImporter(),
+        this.serviceDiscovery = ServiceDiscovery.create(vertx);
+
+        return this.serviceDiscovery.registerServiceImporter(new NacosServiceImporter(),
                 config.getJsonObject("configuration")
                         .put(NacosConstants.NAMESPACE, ctx.getNamespace())
-                        .put(NacosConstants.SERVICE_NAME, ctx.getAppId()),
-                x -> {
-                });
+                        .put(NacosConstants.SERVICE_NAME, ctx.getAppId()));
     }
 
     @Override

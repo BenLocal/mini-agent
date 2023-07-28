@@ -14,7 +14,7 @@ import io.vertx.servicediscovery.Record;
  *
  */
 public interface IServiceDiscoveryRegister {
-    void register(RuntimeContext ctx, JsonObject config);
+    Future<Void> register(RuntimeContext ctx, JsonObject config);
 
     Future<Record> getRecord(String appId);
 }
