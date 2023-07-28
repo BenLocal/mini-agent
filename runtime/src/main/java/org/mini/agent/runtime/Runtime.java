@@ -103,6 +103,10 @@ public class Runtime implements Verticle {
         this.appContext.getHttpAgentBridge()
                 .init(this.appContext);
 
+        // set out bridge
+        this.appContext.getOutputBindingFactory()
+                .init(this.appContext);
+
         return Future.succeededFuture();
     }
 }

@@ -43,8 +43,7 @@ public class HttpApiServer {
     }
 
     public void start(Promise<Void> startPromise) {
-        addApiProxyRoute();
-
+        addRoutes();
         vertx.createHttpServer().requestHandler(this.router).listen(8888, http -> {
             if (http.succeeded()) {
                 // started
@@ -55,9 +54,10 @@ public class HttpApiServer {
         });
     }
 
-    private void addApiProxyRoute() {
+    private void addRoutes() {
         this.router.route("/invoke/:appId/method/*").handler(this::invokeMethod);
         this.router.post("/mpsc/producer/:name/:topic").handler(this::mpscProducer);
+        this.router.post("/binding/:name").handler(this::outputBinding);
     }
 
     private void invokeMethod(RoutingContext ctx) {
@@ -113,6 +113,23 @@ public class HttpApiServer {
                 .onSuccess(x -> ctx.response().end())
                 .onFailure(err -> {
                     log.error("send message failed", err);
+                    ctx.response().setStatusCode(500).end(err.getMessage());
+                }));
+    }
+
+    private void outputBinding(RoutingContext ctx) {
+        String name = ctx.pathParam("name");
+        if (StringHelper.isEmpty(name)) {
+            ctx.response().setStatusCode(400).end("name and topic is required");
+            return;
+        }
+
+        ctx.request().bodyHandler(buffer -> this.context.getOutputBindingFactory()
+                .invoke(name, buffer)
+                .compose(x -> x.send(ctx.response()))
+                .onSuccess(x -> log.info("send binding message success"))
+                .onFailure(err -> {
+                    log.error("send binding message failed", err);
                     ctx.response().setStatusCode(500).end(err.getMessage());
                 }));
     }
