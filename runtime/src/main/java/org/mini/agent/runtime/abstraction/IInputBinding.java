@@ -2,8 +2,6 @@ package org.mini.agent.runtime.abstraction;
 
 import org.mini.agent.runtime.RuntimeContext;
 
-import io.vertx.core.json.JsonObject;
-
 /**
  * 
  * @Author shiben
@@ -11,8 +9,6 @@ import io.vertx.core.json.JsonObject;
  * @Version 1.0
  *
  */
-public interface IInputBinding {
-    void init(RuntimeContext ctx, JsonObject config);
-
+public interface IInputBinding extends IBinding {
     void read(RuntimeContext ctx);
 }

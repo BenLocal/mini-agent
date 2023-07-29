@@ -78,7 +78,7 @@ public class MultiProducerSingleConsumerFactory extends BaseFactory<IMultiProduc
     private Future<Void> createConfs(RuntimeContext ctx, List<JsonObject> items) {
         for (JsonObject conf : items) {
             String future = conf.getString("future");
-            IMultiProducerSingleConsumer mpsc = this.getSingleton(future);
+            IMultiProducerSingleConsumer mpsc = this.getScope(future);
             if (mpsc == null) {
                 log.info("not support mpsc future: {}", future);
                 return Future.failedFuture("not support mpsc future: " + future);
@@ -96,8 +96,8 @@ public class MultiProducerSingleConsumerFactory extends BaseFactory<IMultiProduc
 
     private Future<Void> getTopics(RuntimeContext ctx) {
         // get all topic
-        return webClient.get(ctx.getAgentHttpPort(),
-                ctx.getAgentServerHost(),
+        return webClient.get(ctx.getHttpPort(),
+                ctx.getHttpServerHost(),
                 "/api/mpsc/topics")
                 .as(BodyCodec.jsonObject())
                 .send()

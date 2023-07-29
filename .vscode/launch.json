@@ -23,6 +23,8 @@
                 "--namespace",
                 "public",
                 "--agent-http-port",
+                9999,
+                "--http-port",
                 9123,
                 "--",
                 "java",

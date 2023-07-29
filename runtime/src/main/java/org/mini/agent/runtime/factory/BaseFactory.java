@@ -49,6 +49,12 @@ public abstract class BaseFactory<T> {
         return list;
     }
 
+    protected Map<String, T> getSingletonMap() {
+        Map<String, T> map = new HashMap<>();
+        registers.forEach((k, v) -> map.put(k, getSingleton(k)));
+        return map;
+    }
+
     protected void addRegister(String name, Supplier<T> component) {
         registers.put(name, component);
     }

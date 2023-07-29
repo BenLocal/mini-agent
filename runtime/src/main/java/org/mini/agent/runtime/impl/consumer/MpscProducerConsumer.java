@@ -30,8 +30,8 @@ public class MpscProducerConsumer implements IAgentConsumer {
         JsonObject body = message.body();
         String url = body.getString("callback");
         JsonObject data = body.getJsonObject("data");
-        client.post(runtimeContext.getAgentHttpPort(),
-                runtimeContext.getAgentServerHost(), url)
+        client.post(runtimeContext.getHttpPort(),
+                runtimeContext.getHttpServerHost(), url)
                 .sendJsonObject(data, ar -> {
                     if (ar.succeeded()) {
                         log.info("send data to {} success", url);

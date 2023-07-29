@@ -73,7 +73,7 @@ public class Runtime implements Verticle {
 
         return Future.all(initServiceDiscovery(),
                 initMultiProducerSingleConsumer(),
-                initOutputBinding())
+                initInputAndOutputBinding())
                 // ignore err and return empty
                 .recover(err -> {
                     log.error("runtime start failed", err);
@@ -111,11 +111,11 @@ public class Runtime implements Verticle {
     }
 
     // set out bridge
-    private Future<Void> initOutputBinding() {
+    private Future<Void> initInputAndOutputBinding() {
         // register output binding
-        this.appContext.getMultiProducerSingleConsumerFactory().register(this.appContext);
+        this.appContext.getBindingFactory().register(this.appContext);
 
-        return this.appContext.getOutputBindingFactory()
+        return this.appContext.getBindingFactory()
                 .init(this.appContext, this.appContext.getConfig());
     }
 }

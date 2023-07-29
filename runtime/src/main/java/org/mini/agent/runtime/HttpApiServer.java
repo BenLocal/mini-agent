@@ -44,10 +44,10 @@ public class HttpApiServer {
 
     public void start(Promise<Void> startPromise) {
         addRoutes();
-        vertx.createHttpServer().requestHandler(this.router).listen(8888, http -> {
+        vertx.createHttpServer().requestHandler(this.router).listen(context.getAgentHttpPort(), http -> {
             if (http.succeeded()) {
                 // started
-                log.info("http api server started with port 8888");
+                log.info("http api server started with port {}", context.getAgentHttpPort());
             } else {
                 startPromise.fail(http.cause());
             }
@@ -125,7 +125,7 @@ public class HttpApiServer {
             return;
         }
 
-        ctx.request().bodyHandler(buffer -> this.context.getOutputBindingFactory()
+        ctx.request().bodyHandler(buffer -> this.context.getBindingFactory()
                 .invoke(name, buffer)
                 .compose(x -> x.send(ctx.response()))
                 .onSuccess(x -> log.info("send binding message success"))

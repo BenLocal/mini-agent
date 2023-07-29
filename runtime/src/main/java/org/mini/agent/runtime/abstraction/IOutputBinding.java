@@ -5,7 +5,6 @@ import org.mini.agent.runtime.abstraction.request.OutputBindingInvokeRequest;
 import org.mini.agent.runtime.abstraction.response.OutputBindingResponse;
 
 import io.vertx.core.Future;
-import io.vertx.core.json.JsonObject;
 
 /**
  * 
@@ -14,8 +13,6 @@ import io.vertx.core.json.JsonObject;
  * @Version 1.0
  *
  */
-public interface IOutputBinding {
-    void init(RuntimeContext ctx, JsonObject config);
-
+public interface IOutputBinding extends IBinding {
     Future<OutputBindingResponse> invoke(OutputBindingInvokeRequest request);
 }
