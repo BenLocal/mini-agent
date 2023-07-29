@@ -1,7 +1,7 @@
 {
-    "name": "cron_test",
+    "name": "http_test",
     "type": "binding",
-    "future": "cron",
+    "future": "http",
     "metadata": {
         "aaaa": "aaaa"
     }

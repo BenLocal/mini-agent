@@ -3,6 +3,7 @@ package org.mini.agent.runtime.impl.bindings;
 import org.mini.agent.runtime.RuntimeContext;
 import org.mini.agent.runtime.abstraction.IInputBinding;
 import org.mini.agent.runtime.abstraction.IOutputBinding;
+import org.mini.agent.runtime.abstraction.request.InputBindingReadRequest;
 import org.mini.agent.runtime.abstraction.request.OutputBindingInvokeRequest;
 import org.mini.agent.runtime.abstraction.response.OutputBindingResponse;
 
@@ -29,8 +30,8 @@ public class CronInputBinding implements IInputBinding, IOutputBinding {
     }
 
     @Override
-    public void read(RuntimeContext ctx) {
-
+    public Future<Void> read(RuntimeContext ctx, InputBindingReadRequest request) {
+        return Future.succeededFuture();
     }
 
 }

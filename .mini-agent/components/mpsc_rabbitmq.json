@@ -1,6 +1,6 @@
 {
-    "type": "mpsc",
     "name": "test1",
+    "type": "mpsc",
     "future": "rabbitmq",
     "metadata": {
         "routingKey": "test1-route",

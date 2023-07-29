@@ -10,7 +10,8 @@ services:
       - ../../.mini-agent:/etc/mini-agent
     environment:
       - ARUNTIME_APP_ID=test1
-      - ARUNTIME_AGENT_HTTP_PORT=9123
+      - ARUNTIME_AGENT_HTTP_PORT=8888
+      - ARUNTIME_HTTP_PORT=9123
     ports:
       - "9123:9123"
       - "8888:8888"

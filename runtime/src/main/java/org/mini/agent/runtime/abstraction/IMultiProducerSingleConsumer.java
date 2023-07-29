@@ -1,5 +1,7 @@
 package org.mini.agent.runtime.abstraction;
 
+import java.io.Serializable;
+
 import org.mini.agent.runtime.RuntimeContext;
 import org.mini.agent.runtime.abstraction.request.PublishRequest;
 
@@ -16,7 +18,7 @@ import io.vertx.rabbitmq.RabbitMQMessage;
  * @Version 1.0
  *
  */
-public interface IMultiProducerSingleConsumer {
+public interface IMultiProducerSingleConsumer extends Serializable {
     void init(RuntimeContext ctx, JsonObject config);
 
     Future<Void> consumer(String topic, JsonObject config, Handler<AsyncResult<RabbitMQMessage>> handler);

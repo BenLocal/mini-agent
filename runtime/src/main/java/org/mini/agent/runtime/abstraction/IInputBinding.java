@@ -1,6 +1,9 @@
 package org.mini.agent.runtime.abstraction;
 
 import org.mini.agent.runtime.RuntimeContext;
+import org.mini.agent.runtime.abstraction.request.InputBindingReadRequest;
+
+import io.vertx.core.Future;
 
 /**
  * 
@@ -10,5 +13,5 @@ import org.mini.agent.runtime.RuntimeContext;
  *
  */
 public interface IInputBinding extends IBinding {
-    void read(RuntimeContext ctx);
+    Future<Void> read(RuntimeContext ctx, InputBindingReadRequest request);
 }

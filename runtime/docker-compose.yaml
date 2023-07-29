@@ -6,6 +6,8 @@ services:
       dockerfile: "Dockerfile"
     image: mini-agent-runtime
     container_name: mini-agent-runtime
+    # env:
+    #   - image_version=${image_version:-jre8u382-b05-alpine}
     ports:
       - "9123:9123"
       - "8888:8888"

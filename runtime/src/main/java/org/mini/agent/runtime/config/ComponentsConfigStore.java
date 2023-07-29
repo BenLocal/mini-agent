@@ -65,15 +65,20 @@ public class ComponentsConfigStore implements ConfigStore {
                 .flatMap(files -> {
                     List<Future<JsonObject>> futures = new ArrayList<>();
                     for (FileSet set : filesets) {
-                        Promise<JsonObject> promise = Promise.promise();
-                        set.buildConfiguration(files, json -> {
-                            if (json.failed()) {
-                                promise.fail(json.cause());
-                            } else {
-                                promise.complete(json.result());
-                            }
-                        });
-                        futures.add(promise.future());
+                        for (File file : files) {
+                            Promise<JsonObject> promise = Promise.promise();
+                            List<File> list = new ArrayList<>();
+                            list.add(file);
+                            set.buildConfiguration(list, json -> {
+                                if (json.failed()) {
+                                    promise.fail(json.cause());
+                                } else {
+                                    promise.complete(json.result());
+                                }
+                            });
+                            futures.add(promise.future());
+                        }
+
                     }
                     return Future.all(futures);
                 }).map(compositeFuture -> {
