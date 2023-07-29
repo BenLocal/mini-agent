@@ -68,39 +68,31 @@ public class NacosServiceImporter implements ServiceImporter {
         int regPort = registerConfig.getInteger("port");
         int retryInterval = registerConfig.getInteger("retryInterval", -1);
 
-        vertx.<Void>executeBlocking(promise -> {
-            // create NamingService
-            try {
-                Properties properties = new Properties();
-                properties.setProperty(NacosConstants.NACOS_PROP_SERVERADDR, host);
-                properties.setProperty(NacosConstants.NAMESPACE, namespace);
-                nacos = NamingFactory.createNamingService(properties);
-            } catch (NacosException e) {
-                promise.fail(e);
-                return;
-            }
+        // create NamingService
+        try {
+            Properties properties = new Properties();
+            properties.setProperty(NacosConstants.NACOS_PROP_SERVERADDR, host);
+            properties.setProperty(NacosConstants.NAMESPACE, namespace);
+            nacos = NamingFactory.createNamingService(properties);
+        } catch (NacosException e) {
+            future.fail(e);
+            return;
+        }
 
-            if (registerEnable) {
-                // register
-                register(regIp, regPort, serviceName, groupName);
-                if (retryInterval > 0) {
-                    vertx.setPeriodic(retryInterval, t -> register(regIp, regPort, serviceName, groupName));
-                }
+        if (registerEnable) {
+            // register
+            if (retryInterval > 0) {
+                vertx.setPeriodic(retryInterval, t -> register(regIp, regPort, serviceName, groupName));
             }
+            register(regIp, regPort, serviceName, groupName);
+        }
 
-            // scan
-            scan(promise, groupName);
-            if (scanInterval > 0) {
-                vertx.setPeriodic(scanInterval, t -> scan(null, groupName));
-            }
-        }).onComplete(ar -> {
-            if (ar.failed()) {
-                future.fail(ar.cause());
-            } else {
-                future.complete();
-                started = true;
-            }
-        });
+        // scan
+        if (scanInterval > 0) {
+            vertx.setPeriodic(scanInterval, t -> scan(groupName));
+        }
+        scan(groupName);
+        future.complete();
     }
 
     public boolean isStarted() {
@@ -122,7 +114,7 @@ public class NacosServiceImporter implements ServiceImporter {
         }
     }
 
-    private synchronized void scan(Promise<Void> future, String groupName) {
+    private synchronized void scan(String groupName) {
         // check health
         String status = nacos.getServerStatus();
         if (!"up".equalsIgnoreCase(status)) {
@@ -150,10 +142,6 @@ public class NacosServiceImporter implements ServiceImporter {
 
         if (!servers.isEmpty()) {
             importerServices(servers, groupName);
-        }
-
-        if (future != null) {
-            future.complete();
         }
     }
 

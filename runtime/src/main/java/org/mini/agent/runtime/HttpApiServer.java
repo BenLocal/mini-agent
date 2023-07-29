@@ -58,6 +58,7 @@ public class HttpApiServer {
         this.router.route("/invoke/:appId/method/*").handler(this::invokeMethod);
         this.router.post("/mpsc/producer/:name/:topic").handler(this::mpscProducer);
         this.router.post("/binding/:name").handler(this::outputBinding);
+        this.router.get("/healthz").handler(this::healthz);
     }
 
     private void invokeMethod(RoutingContext ctx) {
@@ -133,4 +134,9 @@ public class HttpApiServer {
                     ctx.response().setStatusCode(500).end(err.getMessage());
                 }));
     }
+
+    private void healthz(RoutingContext ctx) {
+        ctx.response().end("ok");
+    }
+
 }

@@ -10,6 +10,7 @@ import io.vertx.servicediscovery.Record;
 import io.vertx.servicediscovery.ServiceDiscovery;
 import io.vertx.servicediscovery.nacos.NacosConstants;
 import io.vertx.servicediscovery.nacos.NacosServiceImporter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 
@@ -18,6 +19,7 @@ import io.vertx.servicediscovery.nacos.NacosServiceImporter;
  * @Version 1.0
  *
  */
+@Slf4j
 public class NacosServiceDiscoveryRegister implements IServiceDiscoveryRegister {
     private ServiceDiscovery serviceDiscovery;
 
@@ -26,10 +28,17 @@ public class NacosServiceDiscoveryRegister implements IServiceDiscoveryRegister 
         Vertx vertx = ctx.getVertx();
         this.serviceDiscovery = ServiceDiscovery.create(vertx);
 
-        return this.serviceDiscovery.registerServiceImporter(new NacosServiceImporter(),
+        this.serviceDiscovery.registerServiceImporter(new NacosServiceImporter(),
                 config.getJsonObject("configuration")
                         .put(NacosConstants.NAMESPACE, ctx.getNamespace())
-                        .put(NacosConstants.SERVICE_NAME, ctx.getAppId()));
+                        .put(NacosConstants.SERVICE_NAME, ctx.getAppId()))
+                .onComplete(ar -> {
+                    if (ar.failed()) {
+                        log.error("", ar.cause());
+                    }
+                });
+
+        return Future.succeededFuture();
     }
 
     @Override

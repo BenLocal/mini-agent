@@ -78,7 +78,7 @@ public class MultiProducerSingleConsumerFactory extends BaseFactory<IMultiProduc
     private Future<Void> createConfs(RuntimeContext ctx, List<JsonObject> items) {
         for (JsonObject conf : items) {
             String future = conf.getString("future");
-            IMultiProducerSingleConsumer mpsc = this.getScope(future);
+            IMultiProducerSingleConsumer mpsc = this.getSingleton(future);
             if (mpsc == null) {
                 log.info("not support mpsc future: {}", future);
                 return Future.failedFuture("not support mpsc future: " + future);

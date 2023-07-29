@@ -74,12 +74,10 @@ public class Runtime implements Verticle {
         return Future.all(initServiceDiscovery(),
                 initMultiProducerSingleConsumer(),
                 initOutputBinding())
-                .onComplete(ar -> {
-                    if (ar.succeeded()) {
-                        log.info("runtime started");
-                    } else {
-                        log.error("runtime start failed", ar.cause());
-                    }
+                // ignore err and return empty
+                .recover(err -> {
+                    log.error("runtime start failed", err);
+                    return Future.succeededFuture();
                 }).mapEmpty();
     }
 
