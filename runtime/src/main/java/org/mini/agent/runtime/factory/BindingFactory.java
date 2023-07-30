@@ -7,6 +7,7 @@ import org.mini.agent.runtime.RuntimeContext;
 import org.mini.agent.runtime.abstraction.IBinding;
 import org.mini.agent.runtime.abstraction.IInputBinding;
 import org.mini.agent.runtime.abstraction.IOutputBinding;
+import org.mini.agent.runtime.abstraction.request.InputBindingReadRequest;
 import org.mini.agent.runtime.abstraction.request.OutputBindingInvokeRequest;
 import org.mini.agent.runtime.abstraction.response.OutputBindingResponse;
 import org.mini.agent.runtime.config.ConfigUtils;
@@ -16,6 +17,7 @@ import org.mini.agent.runtime.impl.bindings.HttpOutputBinding;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.shareddata.AsyncMap;
 import io.vertx.ext.web.client.WebClient;
@@ -138,17 +140,30 @@ public class BindingFactory extends BaseFactory<IBinding> {
                             return Future.failedFuture("get binding inputs failed with null body");
                         }
 
-                        return Future.succeededFuture(body.getJsonArray("data").stream()
+                        JsonArray bindingJson = body.getJsonArray("bindings");
+                        if (bindingJson == null || bindingJson.isEmpty()) {
+                            log.error("get input binding failed with null values");
+                            return Future.failedFuture("get input binding failed with null values");
+                        }
+
+                        return Future.succeededFuture(bindingJson.stream()
                                 .map(JsonObject.class::cast)
                                 .collect(Collectors.toList()));
                     }).compose(res -> Future.all(res.stream()
-                            .map(item -> this.inputFutures.get(item.getString("future"))
-                                    .compose(binding -> {
-                                        if (binding == null) {
-                                            return Future.failedFuture("binding not found");
-                                        }
-                                        return binding.read(ctx, null);
-                                    }))
+                            .map(item -> {
+                                String name = item.getString("name");
+                                return this.inputFutures.get(name)
+                                        .compose(binding -> {
+                                            if (binding == null) {
+                                                return Future.failedFuture("binding not found");
+                                            }
+
+                                            InputBindingReadRequest request = new InputBindingReadRequest()
+                                                    .setName(name)
+                                                    .setMetadata(item.getJsonObject("metadata"));
+                                            return binding.read(ctx, request);
+                                        });
+                            })
                             .collect(Collectors.toList()))
                             .mapEmpty());
         });

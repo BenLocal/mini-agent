@@ -95,6 +95,19 @@ public class Starter {
 
         });
 
+        router.post("/api/binding/inputs").respond(ctx -> {
+            System.out.println("get input bindings");
+
+            List<JsonObject> items = new ArrayList<>();
+            items.add(new JsonObject()
+                    .put("name", "test1")
+                    .put("callback", "/api/test/callback/binding1"));
+            items.add(new JsonObject()
+                    .put("name", "test1")
+                    .put("callback", "/api/test/callback/binding2"));
+            return Future.succeededFuture(new JsonObject().put("bindings", new JsonArray(items)));
+        });
+
         System.out.println("start server with port 9123");
         server.requestHandler(router).listen(9123);
 

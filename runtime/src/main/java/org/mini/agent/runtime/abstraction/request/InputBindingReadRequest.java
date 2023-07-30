@@ -1,5 +1,6 @@
 package org.mini.agent.runtime.abstraction.request;
 
+import io.vertx.core.json.JsonObject;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -15,5 +16,7 @@ import lombok.experimental.Accessors;
 @Data
 @Accessors(chain = true)
 public class InputBindingReadRequest {
+    private String name;
 
+    private JsonObject metadata;
 }
