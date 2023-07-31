@@ -28,7 +28,7 @@ public class RuntimeConfigLoader {
         Path basePath = getConfigPath();
 
         addConfigDir(basePath.toString());
-        addComponents(Paths.get(basePath.toString(), "components").toString());
+        addComponents(Paths.get(basePath.toString(), ConfigConstents.COMPONENTS).toString());
     }
 
     public Future<JsonObject> load(RuntimeContext ctx) {

@@ -1,7 +1,5 @@
 package org.mini.agent.runtime.abstraction;
 
-import java.io.Serializable;
-
 import org.mini.agent.runtime.RuntimeContext;
 
 import io.vertx.core.json.JsonObject;
@@ -15,6 +13,6 @@ import io.vertx.core.json.JsonObject;
  * @description
  * 
  */
-public interface IBinding extends Serializable {
+public interface IBinding {
     void init(RuntimeContext ctx, JsonObject config);
 }

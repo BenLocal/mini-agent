@@ -124,19 +124,27 @@ public class HttpApiServer {
             ctx.response().setStatusCode(400).end("name and topic is required");
             return;
         }
-
+        String megKey = "binding";
         ctx.request().bodyHandler(buffer -> this.context.getBindingFactory()
                 .invoke(name, buffer)
-                .compose(x -> x.send(ctx.response()))
-                .onSuccess(x -> log.info("send binding message success"))
-                .onFailure(err -> {
-                    log.error("send binding message failed", err);
-                    ctx.response().setStatusCode(500).end(err.getMessage());
-                }));
+                .onSuccess(x -> onHttpSendComplete(x == null
+                        ? ctx.response().end()
+                        : x.send(ctx.response()), megKey))
+                .onFailure(err -> onHttpSendComplete(ctx.response()
+                        .setStatusCode(500).end(err.getMessage()), megKey)));
     }
 
     private void healthz(RoutingContext ctx) {
-        ctx.response().end("ok");
+        onHttpSendComplete(ctx.response().end("ok"), "healthz");
     }
 
+    private void onHttpSendComplete(Future<Void> future, String msgKey) {
+        future.onComplete(ar -> {
+            if (ar.failed()) {
+                log.error("send {} message failed", msgKey, ar.cause());
+            } else if (log.isDebugEnabled()) {
+                log.debug("send {} message success", msgKey);
+            }
+        });
+    }
 }

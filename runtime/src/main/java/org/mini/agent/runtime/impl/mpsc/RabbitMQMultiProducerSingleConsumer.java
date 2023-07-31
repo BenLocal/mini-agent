@@ -3,6 +3,7 @@ package org.mini.agent.runtime.impl.mpsc;
 import org.mini.agent.runtime.RuntimeContext;
 import org.mini.agent.runtime.abstraction.IMultiProducerSingleConsumer;
 import org.mini.agent.runtime.abstraction.request.PublishRequest;
+import org.mini.agent.runtime.config.ConfigConstents;
 import org.mini.agent.runtime.impl.StringHelper;
 
 import io.vertx.core.AsyncResult;
@@ -27,7 +28,7 @@ public class RabbitMQMultiProducerSingleConsumer implements IMultiProducerSingle
 
     @Override
     public void init(RuntimeContext ctx, JsonObject config) {
-        JsonObject metadata = config.getJsonObject("metadata");
+        JsonObject metadata = config.getJsonObject(ConfigConstents.METADATA);
         JsonObject optionsConf = metadata.getJsonObject("options");
 
         RabbitMQOptions options = new RabbitMQOptions();
@@ -69,7 +70,7 @@ public class RabbitMQMultiProducerSingleConsumer implements IMultiProducerSingle
         String queueName = String.format("%s-%s", consumerID, topic);
 
         String exchangeKind = config.getString("exchangeKind", "fanout");
-        String routingKey = config.getJsonObject("metadata").getString("routingKey", "");
+        String routingKey = config.getJsonObject(ConfigConstents.METADATA).getString("routingKey", "");
 
         return this.client.exchangeDeclare(topic, exchangeKind, true, false)
                 .compose(x -> client.queueDeclare(queueName, true, false, true))

@@ -27,7 +27,7 @@ public final class ConfigUtils {
             return Collections.emptyList();
         }
 
-        JsonArray components = config.getJsonArray("components");
+        JsonArray components = config.getJsonArray(ConfigConstents.COMPONENTS);
         if (components == null || components.isEmpty()) {
             return Collections.emptyList();
         }

@@ -1,13 +1,15 @@
 package org.mini.agent.runtime.factory;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.mini.agent.runtime.RuntimeContext;
 import org.mini.agent.runtime.abstraction.IMultiProducerSingleConsumer;
 import org.mini.agent.runtime.abstraction.request.PublishRequest;
+import org.mini.agent.runtime.config.ConfigConstents;
 import org.mini.agent.runtime.config.ConfigUtils;
 import org.mini.agent.runtime.impl.mpsc.RabbitMQMultiProducerSingleConsumer;
 
@@ -16,7 +18,6 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.shareddata.AsyncMap;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.codec.BodyCodec;
 import lombok.extern.slf4j.Slf4j;
@@ -32,12 +33,12 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class MultiProducerSingleConsumerFactory extends BaseFactory<IMultiProducerSingleConsumer> {
-    private final AsyncMap<String, ConsumerInfo> mpscFutures;
+    private final Map<String, ConsumerInfo> mpscFutures;
     private final WebClient webClient;
 
     public MultiProducerSingleConsumerFactory(Vertx vertx) {
         this.webClient = WebClient.create(vertx);
-        this.mpscFutures = vertx.sharedData().<String, ConsumerInfo>getLocalAsyncMap("service.mpsc").result();
+        this.mpscFutures = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -59,31 +60,25 @@ public class MultiProducerSingleConsumerFactory extends BaseFactory<IMultiProduc
     }
 
     public Future<Void> send(String name, PublishRequest request) {
-        return this.mpscFutures.get(name)
-                .compose(item -> {
-                    IMultiProducerSingleConsumer mpsc = item.getMpsc();
-                    if (mpsc == null) {
-                        return Future.failedFuture("can not find mpsc");
-                    }
+        ConsumerInfo item = this.mpscFutures.get(name);
+        IMultiProducerSingleConsumer mpsc = item.getMpsc();
+        if (mpsc == null) {
+            return Future.failedFuture("can not find mpsc");
+        }
 
-                    return mpsc.producer(request);
-                });
+        return mpsc.producer(request);
     }
 
     private Future<Void> createConfs(RuntimeContext ctx, List<JsonObject> items) {
         for (JsonObject conf : items) {
-            String future = conf.getString("future");
+            String future = conf.getString(ConfigConstents.FUTURE);
             IMultiProducerSingleConsumer mpsc = this.getScope(future);
             if (mpsc == null) {
                 log.info("not support mpsc future: {}", future);
                 return Future.failedFuture("not support mpsc future: " + future);
             }
             mpsc.init(ctx, conf);
-            mpscFutures.put(conf.getString("name"), new ConsumerInfo(mpsc, conf), ar -> {
-                if (ar.failed()) {
-                    log.error("put mpsc config failed", ar.cause());
-                }
-            });
+            mpscFutures.put(conf.getString("name"), new ConsumerInfo(mpsc, conf));
         }
 
         return Future.succeededFuture();
@@ -123,19 +118,19 @@ public class MultiProducerSingleConsumerFactory extends BaseFactory<IMultiProduc
                         String topicName = topic.getString("topic");
                         String name = topic.getString("name");
                         String callback = topic.getString("callback");
-                        results.add(this.mpscFutures.get(name).compose(item -> {
-                            JsonObject conf = item.getConfig()
-                                    .put("consumerID", ctx.getAppId());
-                            return item.getMpsc().consumer(topicName, conf, ar -> {
-                                if (ar.failed()) {
-                                    log.error("consumer {} failed", topic, ar.cause());
-                                    return;
-                                }
+                        ConsumerInfo item = this.mpscFutures.get(name);
+                        results.add(item.getMpsc().consumer(topicName,
+                                item.getConfig()
+                                        .put("consumerID", ctx.getAppId()),
+                                ar -> {
+                                    if (ar.failed()) {
+                                        log.error("consumer {} failed", topic, ar.cause());
+                                        return;
+                                    }
 
-                                ctx.getHttpAgentBridge().publish("mpsc.publish",
-                                        createConsumerMessage(callback, topicName, name, ar.result().body()));
-                            });
-                        }));
+                                    ctx.getHttpAgentBridge().publish("mpsc.publish",
+                                            createConsumerMessage(callback, topicName, name, ar.result().body()));
+                                }));
                     }
 
                     return Future.all(results)
@@ -155,7 +150,7 @@ public class MultiProducerSingleConsumerFactory extends BaseFactory<IMultiProduc
                 .put("data", data);
     }
 
-    private static class ConsumerInfo implements Serializable {
+    private static class ConsumerInfo {
         private final IMultiProducerSingleConsumer mpsc;
         private final JsonObject config;
 

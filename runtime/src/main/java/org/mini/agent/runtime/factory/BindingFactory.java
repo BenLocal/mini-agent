@@ -1,6 +1,8 @@
 package org.mini.agent.runtime.factory;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.mini.agent.runtime.RuntimeContext;
@@ -10,6 +12,7 @@ import org.mini.agent.runtime.abstraction.IOutputBinding;
 import org.mini.agent.runtime.abstraction.request.InputBindingReadRequest;
 import org.mini.agent.runtime.abstraction.request.OutputBindingInvokeRequest;
 import org.mini.agent.runtime.abstraction.response.OutputBindingResponse;
+import org.mini.agent.runtime.config.ConfigConstents;
 import org.mini.agent.runtime.config.ConfigUtils;
 import org.mini.agent.runtime.impl.bindings.CronInputBinding;
 import org.mini.agent.runtime.impl.bindings.HttpOutputBinding;
@@ -19,7 +22,6 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.shareddata.AsyncMap;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.codec.BodyCodec;
 import lombok.extern.slf4j.Slf4j;
@@ -35,14 +37,14 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class BindingFactory extends BaseFactory<IBinding> {
-    private final AsyncMap<String, IOutputBinding> outputFutures;
-    private final AsyncMap<String, IInputBinding> inputFutures;
+    private final Map<String, IOutputBinding> outputFutures;
+    private final Map<String, IInputBinding> inputFutures;
     private final WebClient webClient;
 
     public BindingFactory(Vertx vertx) {
         this.webClient = WebClient.create(vertx);
-        this.inputFutures = vertx.sharedData().<String, IInputBinding>getLocalAsyncMap("binding.inputs").result();
-        this.outputFutures = vertx.sharedData().<String, IOutputBinding>getLocalAsyncMap("binding.outputs").result();
+        this.inputFutures = new ConcurrentHashMap<>();
+        this.outputFutures = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -60,18 +62,15 @@ public class BindingFactory extends BaseFactory<IBinding> {
     }
 
     public Future<OutputBindingResponse> invoke(String name, Buffer body) {
-        return this.outputFutures.get(name)
-                .compose(binding -> {
-                    if (binding == null) {
-                        return Future.failedFuture("binding not found");
-                    }
-
-                    JsonObject result = new JsonObject(body);
-                    return binding.invoke(new OutputBindingInvokeRequest()
-                            .setOperation(result.getString("operation"))
-                            .setMetadata(result.getJsonObject("metadata"))
-                            .setData(result.getBuffer("data")));
-                });
+        IOutputBinding binding = this.outputFutures.get(name);
+        if (binding == null) {
+            return Future.failedFuture("binding not found");
+        }
+        JsonObject result = new JsonObject(body);
+        return binding.invoke(new OutputBindingInvokeRequest()
+                .setOperation(result.getString("operation"))
+                .setMetadata(result.getJsonObject(ConfigConstents.METADATA))
+                .setData(result.getBuffer("data")));
     }
 
     private Future<Void> initInputOutputBinding(RuntimeContext ctx, JsonObject config) {
@@ -81,7 +80,7 @@ public class BindingFactory extends BaseFactory<IBinding> {
         }
 
         for (JsonObject conf : items) {
-            String future = conf.getString("future");
+            String future = conf.getString(ConfigConstents.FUTURE);
             String name = conf.getString("name");
             IBinding binding = this.getScope(future);
             JsonObject bindingConf = new JsonObject();
@@ -89,12 +88,12 @@ public class BindingFactory extends BaseFactory<IBinding> {
             boolean isOutput = false;
             if (binding instanceof IInputBinding) {
                 bindingConf.put("input", new JsonObject()
-                        .put("future", future));
+                        .put(ConfigConstents.FUTURE, future));
                 isInput = true;
             }
             if (binding instanceof IOutputBinding) {
                 bindingConf.put("output", new JsonObject()
-                        .put("future", future));
+                        .put(ConfigConstents.FUTURE, future));
                 isOutput = true;
             }
 
@@ -118,54 +117,52 @@ public class BindingFactory extends BaseFactory<IBinding> {
     }
 
     private Future<Void> startInputRead(RuntimeContext ctx) {
-        return this.inputFutures.size().compose(size -> {
-            if (size == 0) {
-                return Future.succeededFuture();
-            }
+        int size = this.inputFutures.size();
+        if (size == 0) {
+            return Future.succeededFuture();
+        }
 
-            return webClient.get(ctx.getHttpPort(),
-                    ctx.getHttpServerHost(),
-                    "/api/binding/inputs")
-                    .as(BodyCodec.jsonObject())
-                    .send()
-                    .compose(resp -> {
-                        // Do something with response
-                        if (resp.statusCode() != 200) {
-                            log.error("get binding inputs failed, status code: {}", resp.statusCode());
-                            return Future.failedFuture("get binding inputs failed, status code: " + resp.statusCode());
-                        }
-                        JsonObject body = resp.body();
-                        if (body == null) {
-                            log.error("get binding inputs failed with null body");
-                            return Future.failedFuture("get binding inputs failed with null body");
-                        }
+        return webClient.get(ctx.getHttpPort(),
+                ctx.getHttpServerHost(),
+                "/api/binding/inputs")
+                .as(BodyCodec.jsonObject())
+                .send()
+                .compose(resp -> {
+                    // Do something with response
+                    if (resp.statusCode() != 200) {
+                        log.error("get binding inputs failed, status code: {}", resp.statusCode());
+                        return Future.failedFuture("get binding inputs failed, status code: " + resp.statusCode());
+                    }
+                    JsonObject body = resp.body();
+                    if (body == null) {
+                        log.error("get binding inputs failed with null body");
+                        return Future.failedFuture("get binding inputs failed with null body");
+                    }
 
-                        JsonArray bindingJson = body.getJsonArray("bindings");
-                        if (bindingJson == null || bindingJson.isEmpty()) {
-                            log.error("get input binding failed with null values");
-                            return Future.failedFuture("get input binding failed with null values");
-                        }
+                    JsonArray bindingJson = body.getJsonArray("bindings");
+                    if (bindingJson == null || bindingJson.isEmpty()) {
+                        log.error("get input binding failed with null values");
+                        return Future.failedFuture("get input binding failed with null values");
+                    }
 
-                        return Future.succeededFuture(bindingJson.stream()
-                                .map(JsonObject.class::cast)
-                                .collect(Collectors.toList()));
-                    }).compose(res -> Future.all(res.stream()
-                            .map(item -> {
-                                String name = item.getString("name");
-                                return this.inputFutures.get(name)
-                                        .compose(binding -> {
-                                            if (binding == null) {
-                                                return Future.failedFuture("binding not found");
-                                            }
+                    return Future.succeededFuture(bindingJson.stream()
+                            .map(JsonObject.class::cast)
+                            .collect(Collectors.toList()));
+                }).compose(res -> Future.all(res.stream()
+                        .map(item -> {
+                            String name = item.getString("name");
+                            IInputBinding binding = this.inputFutures.get(name);
+                            if (binding == null) {
+                                return Future.failedFuture("binding not found");
+                            }
 
-                                            InputBindingReadRequest request = new InputBindingReadRequest()
-                                                    .setName(name)
-                                                    .setMetadata(item.getJsonObject("metadata"));
-                                            return binding.read(ctx, request);
-                                        });
-                            })
-                            .collect(Collectors.toList()))
-                            .mapEmpty());
-        });
+                            InputBindingReadRequest request = new InputBindingReadRequest()
+                                    .setName(name)
+                                    .setMetadata(item.getJsonObject(ConfigConstents.METADATA));
+                            return binding.read(ctx, request);
+                        })
+                        .collect(Collectors.toList()))
+                        .mapEmpty());
+
     }
 }

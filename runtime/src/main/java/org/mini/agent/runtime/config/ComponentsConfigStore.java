@@ -83,7 +83,7 @@ public class ComponentsConfigStore implements ConfigStore {
                     return Future.all(futures);
                 }).map(compositeFuture -> {
                     JsonArray json = new JsonArray(compositeFuture.<JsonObject>list());
-                    return new JsonObject().put("components", json).toBuffer();
+                    return new JsonObject().put(ConfigConstents.COMPONENTS, json).toBuffer();
                 });
     }
 }
