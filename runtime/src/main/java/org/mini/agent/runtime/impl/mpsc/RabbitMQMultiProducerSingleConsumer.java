@@ -1,5 +1,7 @@
 package org.mini.agent.runtime.impl.mpsc;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.mini.agent.runtime.RuntimeContext;
 import org.mini.agent.runtime.abstraction.IMultiProducerSingleConsumer;
 import org.mini.agent.runtime.abstraction.request.PublishRequest;
@@ -25,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class RabbitMQMultiProducerSingleConsumer implements IMultiProducerSingleConsumer {
     private RabbitMQClient client;
+    private AtomicBoolean callStart = new AtomicBoolean(false);
 
     @Override
     public void init(RuntimeContext ctx, JsonObject config) {
@@ -43,14 +46,24 @@ public class RabbitMQMultiProducerSingleConsumer implements IMultiProducerSingle
         this.client = RabbitMQClient.create(ctx.getVertx(), options);
 
         // restart rabbitmq client
+        this.callStart.set(true);
         this.client.start(x -> {
             if (x.failed()) {
                 log.error("rabbitmq client start failed", x.cause());
             } else {
                 log.info("rabbitmq client start success");
             }
+
+            this.callStart.set(false);
         });
         ctx.getVertx().setPeriodic(5000, x -> {
+            // call start is true, means rabbitmq client is starting
+            // do not check rabbitmq client status
+            // do not restart rabbitmq client
+            if (this.callStart.get()) {
+                return;
+            }
+
             if (!this.client.isConnected()) {
                 if (this.client.isOpenChannel()) {
                     this.client.restartConnect(0, ar -> {

@@ -1,6 +1,7 @@
 package io.vertx.servicediscovery.nacos;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -11,11 +12,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import com.alibaba.nacos.api.exception.NacosException;
-import com.alibaba.nacos.api.naming.NamingFactory;
-import com.alibaba.nacos.api.naming.NamingService;
 import com.alibaba.nacos.api.naming.pojo.Instance;
 import com.alibaba.nacos.api.naming.pojo.ListView;
 
+import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -31,8 +31,7 @@ import io.vertx.servicediscovery.spi.ServicePublisher;
  */
 public class NacosServiceImporter implements ServiceImporter {
     private ServicePublisher publisher;
-    private NamingService nacos;
-    private Vertx vertx;
+    private NacosAsyncNamingService nacos;
     private String namespace;
 
     private AtomicBoolean registed = new AtomicBoolean(false);
@@ -43,13 +42,9 @@ public class NacosServiceImporter implements ServiceImporter {
     @Override
     public void start(Vertx vertx, ServicePublisher publisher, JsonObject configuration, Promise<Void> future) {
         this.publisher = publisher;
-        this.vertx = vertx;
 
         String groupName = configuration.getString(NacosConstants.GROUP_NAME);
         namespace = configuration.getString(NacosConstants.NAMESPACE, "public");
-        if (namespace == null || namespace.isEmpty()) {
-            namespace = "public";
-        }
 
         String serviceName = configuration.getString(NacosConstants.SERVICE_NAME);
         int scanInterval = configuration.getInteger("scanInterval", -1);
@@ -69,11 +64,12 @@ public class NacosServiceImporter implements ServiceImporter {
         int retryInterval = registerConfig.getInteger("retryInterval", -1);
 
         // create NamingService
+        Properties properties = new Properties();
+        properties.setProperty(NacosConstants.NACOS_PROP_SERVERADDR, host);
+        properties.setProperty(NacosConstants.NAMESPACE, namespace);
+
         try {
-            Properties properties = new Properties();
-            properties.setProperty(NacosConstants.NACOS_PROP_SERVERADDR, host);
-            properties.setProperty(NacosConstants.NAMESPACE, namespace);
-            nacos = NamingFactory.createNamingService(properties);
+            this.nacos = new NacosAsyncNamingService(vertx, properties);
         } catch (NacosException e) {
             future.fail(e);
             return;
@@ -92,6 +88,8 @@ public class NacosServiceImporter implements ServiceImporter {
             vertx.setPeriodic(scanInterval, t -> scan(groupName));
         }
         scan(groupName);
+
+        // start success
         future.complete();
     }
 
@@ -99,68 +97,88 @@ public class NacosServiceImporter implements ServiceImporter {
         return started;
     }
 
-    private void register(String ip, int port, String serviceName, String groupName) {
+    private synchronized void register(String ip, int port, String serviceName, String groupName) {
         if (registed.get()) {
             return;
         }
 
         // register
-        try {
-            nacos.registerInstance(serviceName, groupName, ip,
-                    port);
-            registed.set(true);
-        } catch (NacosException e) {
-            registed.set(false);
-        }
+        nacos.registerInstance(serviceName, groupName, ip, port)
+                .onComplete(ar -> registed.set(ar.succeeded()));
     }
 
     private synchronized void scan(String groupName) {
         // check health
-        String status = nacos.getServerStatus();
-        if (!"up".equalsIgnoreCase(status)) {
-            // unhealthy, retry and register
-            registed.set(false);
-            return;
-        }
+        nacos.getServerStatus()
+                .onComplete(ar -> {
+                    if (ar.succeeded() && "up".equalsIgnoreCase(ar.result())) {
+                        // healthy
+                        pageServers(groupName)
+                                .compose(servers -> {
+                                    if (servers != null && !servers.isEmpty()) {
+                                        return importerServices(servers, groupName);
+                                    }
 
-        Set<String> servers = new HashSet<>();
-        int pageNo = 1;
-
-        try {
-            ListView<String> serves = nacos.getServicesOfServer(pageNo, 100, groupName);
-            if (!serves.getData().isEmpty()) {
-                servers.addAll(serves.getData());
-            }
-
-            if (serves.getCount() > 100) {
-                // pageNo++;
-                // TODO
-            }
-        } catch (NacosException e) {
-            // ignore and retry
-        }
-
-        if (!servers.isEmpty()) {
-            importerServices(servers, groupName);
-        }
+                                    return Future.succeededFuture();
+                                })
+                                .onComplete(servers -> {
+                                    if (servers.succeeded()) {
+                                        started = true;
+                                    } else {
+                                        started = false;
+                                    }
+                                });
+                    } else {
+                        // unhealthy, retry and register
+                        registed.set(false);
+                    }
+                });
     }
 
-    private void scanHealthInstances(String serverName, String groupName) {
-        vertx.<List<Instance>>executeBlocking(f -> {
-            try {
-                f.complete(nacos.selectInstances(serverName, groupName, true));
-            } catch (NacosException e) {
-                f.fail(e);
-            }
-        }).onComplete(ar -> {
-            if (ar.failed() || ar.result() == null) {
-                // log
-            } else {
-                List<Instance> services = ar.result().stream().filter(x -> x.isHealthy()).collect(Collectors.toList());
-                retrieveInstances(services, serverName);
-            }
-        });
+    private Future<Set<String>> pageServers(String groupName) {
+        int pageNo = 1;
+        int pageSize = 100;
+        return nacos.getServicesOfServer(pageNo, pageSize, groupName)
+                .compose(first -> {
+                    Set<String> servers = new HashSet<>();
+                    if (!first.getData().isEmpty()) {
+                        servers.addAll(first.getData());
+                    }
+                    if (first.getCount() > pageSize) {
+                        // get next page
+                        int totalPage = first.getCount() / pageSize + 1;
+                        List<Future<ListView<String>>> futures = new ArrayList<>();
+                        for (int i = 2; i <= totalPage; i++) {
+                            int page = i;
+                            futures.add(nacos.getServicesOfServer(page, pageSize, groupName));
+                        }
 
+                        Future.all(futures).map(d -> {
+                            List<ListView<String>> res = d.<ListView<String>>list();
+                            return res.stream().map(x -> x.getData()).collect(Collectors.toList());
+                        }).onComplete(x -> {
+                            if (x.result() != null) {
+                                x.result().stream().forEach(servers::addAll);
+                            }
+                        });
+                    }
+
+                    return Future.succeededFuture(servers);
+                });
+
+    }
+
+    private Future<List<Instance>> scanHealthInstances(String serverName, String groupName) {
+        return nacos.selectInstances(serverName, groupName, true)
+                .map(res -> {
+                    if (res != null && !res.isEmpty()) {
+                        List<Instance> instances = res.stream().filter(x -> x.isHealthy())
+                                .collect(Collectors.toList());
+                        retrieveInstances(instances, serverName);
+                        return instances;
+                    }
+                    return Collections.emptyList();
+                });
     }
 
     private void retrieveInstances(List<Instance> instances, String serverName) {
@@ -202,7 +220,7 @@ public class NacosServiceImporter implements ServiceImporter {
         cache.removeAll(toRemove);
     }
 
-    private void importerServices(Set<String> services, String groupName) {
+    private Future<Void> importerServices(Set<String> services, String groupName) {
         for (Map.Entry<String, List<ImportedNacosInstance>> entry : instanceChache.entrySet()) {
             if (!services.contains(entry.getKey())) {
                 // remove
@@ -212,6 +230,8 @@ public class NacosServiceImporter implements ServiceImporter {
             }
         }
 
-        services.forEach(serverName -> scanHealthInstances(serverName, groupName));
+        return Future.all(services.stream().map(serverName -> scanHealthInstances(serverName, groupName))
+                .collect(Collectors.toList()))
+                .mapEmpty();
     }
 }
