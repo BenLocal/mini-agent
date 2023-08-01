@@ -108,6 +108,21 @@ public class Starter {
             return Future.succeededFuture(new JsonObject().put("bindings", new JsonArray(items)));
         });
 
+        router.post("/cron_test").handler(ctx -> {
+            ctx.request().body()
+                    .compose(b -> {
+                        JsonObject body = b.toJsonObject();
+                        System.out.println("cron_test: " + body.toString());
+                        return Future.succeededFuture();
+                    }).onComplete(x -> {
+                        if (x.succeeded()) {
+                            ctx.response().end("success");
+                        } else {
+                            ctx.response().end("failed: " + x.cause().getMessage());
+                        }
+                    });
+        });
+
         System.out.println("start server with port 9123");
         server.requestHandler(router).listen(9123);
 

@@ -1,0 +1,14 @@
+@host = 127.0.0.1
+@port = 9123
+
+
+### output binding for http_test
+POST http://{{host}}:{{port}}/cron_test HTTP/1.1
+content-type: application/json
+
+{
+  "operation": "get",
+  "metadata": {
+    "url": "http://www.baidu.com"
+  }
+}

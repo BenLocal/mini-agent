@@ -20,6 +20,7 @@ import org.mini.agent.runtime.impl.StringHelper;
 import org.mini.agent.runtime.impl.bindings.CronInputBinding;
 import org.mini.agent.runtime.impl.bindings.HttpOutputBinding;
 
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -133,24 +134,28 @@ public class BindingFactory extends BaseFactory<IBinding> {
         InputBindingReadRequest request = new InputBindingReadRequest()
                 .setName(name)
                 .setMetadata(config.getJsonObject(ConfigConstents.METADATA));
-        return binding.read(ctx, request, x -> {
-            if (x.succeeded()) {
-                InputBindingResponse res = x.result();
-                if (res == null) {
-                    log.info("input binding read success, name: {}", name);
-                    return;
-                }
-                String url = res == null || StringHelper.isEmpty(res.getUrl()) ? request.getName() : res.getUrl();
-                webClient.post(ctx.getHttpPort(), ctx.getHttpServerHost(), url)
-                        .sendJson(x.result() == null ? new JsonObject() : x.result().getBody())
-                        .onComplete(ar -> {
-                            if (ar.succeeded()) {
-                                log.info("input binding callback success, name: {}", name);
-                            } else {
-                                log.error("input binding callback failed, name: {}", name, ar.cause());
-                            }
-                        });
+        return binding.read(ctx, request,
+                x -> onInputBindingResponse(x, name, ctx));
+    }
+
+    private void onInputBindingResponse(AsyncResult<InputBindingResponse> response,
+            String name, RuntimeContext ctx) {
+        if (response.succeeded()) {
+            InputBindingResponse res = response.result();
+            if (res == null) {
+                log.info("input binding read success, name: {}", name);
+                return;
             }
-        });
+            String url = res == null || StringHelper.isEmpty(res.getUrl()) ? name : res.getUrl();
+            webClient.post(ctx.getHttpPort(), ctx.getHttpServerHost(), "/" + url)
+                    .sendJson(response.result() == null ? new JsonObject() : response.result().getBody())
+                    .onComplete(ar -> {
+                        if (ar.succeeded()) {
+                            log.info("input binding callback success, name: {}", name);
+                        } else {
+                            log.error("input binding callback failed, name: {}", name, ar.cause());
+                        }
+                    });
+        }
     }
 }
