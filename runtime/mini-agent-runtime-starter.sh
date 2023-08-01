@@ -1,6 +1,9 @@
 #!/bin/bash
 
 echo "****start runtime ****"
+echo Script name: $0
+echo Script $# arguments
+echo Script arguments: $@
 
 RUNTIME_AGES="-Dmini.agent.config.path=/etc/mini-agent"
 ######################
@@ -28,3 +31,4 @@ echo "**** start run cmd: '$@' ****"
 exec "$@" 2>&1 &
 wait $!
 exit $?
+

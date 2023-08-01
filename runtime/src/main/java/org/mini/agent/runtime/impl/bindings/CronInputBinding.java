@@ -9,12 +9,16 @@ import org.mini.agent.runtime.abstraction.IInputBinding;
 import org.mini.agent.runtime.abstraction.IOutputBinding;
 import org.mini.agent.runtime.abstraction.request.InputBindingReadRequest;
 import org.mini.agent.runtime.abstraction.request.OutputBindingInvokeRequest;
+import org.mini.agent.runtime.abstraction.response.InputBindingResponse;
 import org.mini.agent.runtime.abstraction.response.OutputBindingResponse;
 
 import com.noenv.cronutils.CronScheduler;
 
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClient;
 import lombok.extern.slf4j.Slf4j;
@@ -26,17 +30,14 @@ import lombok.extern.slf4j.Slf4j;
  * @Version 1.0
  *
  */
-@Slf4j
 public class CronInputBinding implements IInputBinding, IOutputBinding {
     private Vertx vertx;
     private Map<String, CronScheduler> schedulers;
-    private WebClient webClient;
 
     @Override
     public void init(RuntimeContext ctx, JsonObject config) {
         this.vertx = ctx.getVertx();
         this.schedulers = new HashMap<>();
-        this.webClient = WebClient.create(vertx);
     }
 
     @Override
@@ -55,18 +56,23 @@ public class CronInputBinding implements IInputBinding, IOutputBinding {
                 if (scheduler1 != null) {
                     scheduler1.active();
                 }
-
+                break;
+            default:
                 break;
         }
         return Future.succeededFuture();
     }
 
     @Override
-    public Future<Void> read(RuntimeContext ctx, InputBindingReadRequest request) {
+    public Future<Void> read(RuntimeContext ctx, InputBindingReadRequest request,
+            Handler<AsyncResult<InputBindingResponse>> callback) {
         JsonObject jobs = request.getMetadata().getJsonObject("jobs");
+        if (jobs == null) {
+            return Future.succeededFuture();
+        }
+
         String cron = jobs.getString("cron");
         String id = jobs.getString("id");
-        String callback = jobs.getString("callback");
         if (schedulers.containsKey(id)) {
             return Future.succeededFuture();
         }
@@ -79,14 +85,10 @@ public class CronInputBinding implements IInputBinding, IOutputBinding {
             payload.put("id", id);
             payload.put("type", "cron");
             payload.put("instanceId", instanceId);
-            log.info("cron job instance {} start invoke", instanceId, id);
-            webClient.post(ctx.getHttpPort(), ctx.getHttpServerHost(), callback)
-                    .sendJson(payload)
-                    .onSuccess(res -> log.info("cron job instance {} invoke success", instanceId))
-                    .onFailure(res -> log.error("cron job  instance {} invoke failed", instanceId));
+            callback.handle(Future.succeededFuture(new InputBindingResponse()
+                    .setBody(payload)));
         });
 
         return Future.succeededFuture();
     }
-
 }

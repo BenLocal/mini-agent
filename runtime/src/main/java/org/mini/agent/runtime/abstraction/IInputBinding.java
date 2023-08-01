@@ -2,8 +2,11 @@ package org.mini.agent.runtime.abstraction;
 
 import org.mini.agent.runtime.RuntimeContext;
 import org.mini.agent.runtime.abstraction.request.InputBindingReadRequest;
+import org.mini.agent.runtime.abstraction.response.InputBindingResponse;
 
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 
 /**
  * 
@@ -13,5 +16,6 @@ import io.vertx.core.Future;
  *
  */
 public interface IInputBinding extends IBinding {
-    Future<Void> read(RuntimeContext ctx, InputBindingReadRequest request);
+    Future<Void> read(RuntimeContext ctx, InputBindingReadRequest request,
+            Handler<AsyncResult<InputBindingResponse>> callback);
 }

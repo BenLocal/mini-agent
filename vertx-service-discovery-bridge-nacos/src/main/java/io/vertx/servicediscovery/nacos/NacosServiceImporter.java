@@ -39,12 +39,17 @@ public class NacosServiceImporter implements ServiceImporter {
 
     private final Map<String, List<ImportedNacosInstance>> instanceChache = new ConcurrentHashMap<>();
 
+    private static final String DEFAULT_NAMESPACE = "public";
+
     @Override
     public void start(Vertx vertx, ServicePublisher publisher, JsonObject configuration, Promise<Void> future) {
         this.publisher = publisher;
 
         String groupName = configuration.getString(NacosConstants.GROUP_NAME);
-        namespace = configuration.getString(NacosConstants.NAMESPACE, "public");
+        namespace = configuration.getString(NacosConstants.NAMESPACE, DEFAULT_NAMESPACE);
+        if (namespace == null || namespace.isEmpty()) {
+            namespace = DEFAULT_NAMESPACE;
+        }
 
         String serviceName = configuration.getString(NacosConstants.SERVICE_NAME);
         int scanInterval = configuration.getInteger("scanInterval", -1);

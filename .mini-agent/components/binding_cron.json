@@ -3,6 +3,9 @@
     "type": "binding",
     "future": "cron",
     "metadata": {
-        "aaaa": "aaaa"
+        "jobs": {
+            "cron": "0 * * * * ?",
+            "id": "cron1"
+        }
     }
 }

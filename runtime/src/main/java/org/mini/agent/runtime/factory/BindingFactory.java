@@ -1,5 +1,6 @@
 package org.mini.agent.runtime.factory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,9 +12,11 @@ import org.mini.agent.runtime.abstraction.IInputBinding;
 import org.mini.agent.runtime.abstraction.IOutputBinding;
 import org.mini.agent.runtime.abstraction.request.InputBindingReadRequest;
 import org.mini.agent.runtime.abstraction.request.OutputBindingInvokeRequest;
+import org.mini.agent.runtime.abstraction.response.InputBindingResponse;
 import org.mini.agent.runtime.abstraction.response.OutputBindingResponse;
 import org.mini.agent.runtime.config.ConfigConstents;
 import org.mini.agent.runtime.config.ConfigUtils;
+import org.mini.agent.runtime.impl.StringHelper;
 import org.mini.agent.runtime.impl.bindings.CronInputBinding;
 import org.mini.agent.runtime.impl.bindings.HttpOutputBinding;
 
@@ -50,9 +53,7 @@ public class BindingFactory extends BaseFactory<IBinding> {
     @Override
     public Future<Void> init(RuntimeContext ctx, JsonObject config) {
         // init input binding and output binding form config
-        return initInputOutputBinding(ctx, config)
-                // start input bindings
-                .compose(x -> startInputRead(ctx));
+        return initInputOutputBinding(ctx, config);
     }
 
     @Override
@@ -79,30 +80,33 @@ public class BindingFactory extends BaseFactory<IBinding> {
             return Future.succeededFuture();
         }
 
-        for (JsonObject conf : items) {
-            String future = conf.getString(ConfigConstents.FUTURE);
-            String name = conf.getString("name");
+        List<Future<Void>> futures = new ArrayList<>();
+        for (JsonObject item : items) {
+            String future = item.getString(ConfigConstents.FUTURE);
+            String name = item.getString("name");
             IBinding binding = this.getScope(future);
             JsonObject bindingConf = new JsonObject();
             boolean isInput = false;
             boolean isOutput = false;
             if (binding instanceof IInputBinding) {
-                bindingConf.put("input", new JsonObject()
-                        .put(ConfigConstents.FUTURE, future));
+                bindingConf.put("input", true);
                 isInput = true;
             }
             if (binding instanceof IOutputBinding) {
-                bindingConf.put("output", new JsonObject()
-                        .put(ConfigConstents.FUTURE, future));
+                bindingConf.put("output", true);
                 isOutput = true;
             }
 
+            bindingConf.mergeIn(item, true);
+
             // init binding
-            binding.init(ctx, conf);
+            binding.init(ctx, bindingConf);
 
             if (isInput) {
                 // register input binding
                 inputFutures.put(name, (IInputBinding) binding);
+                // start input bindings
+                futures.add(startInputRead(ctx, name, (IInputBinding) binding, item));
                 log.info("register input binding, future: {}, name: {}", future, name);
             }
 
@@ -113,56 +117,40 @@ public class BindingFactory extends BaseFactory<IBinding> {
             }
         }
 
-        return Future.succeededFuture();
-    }
-
-    private Future<Void> startInputRead(RuntimeContext ctx) {
-        int size = this.inputFutures.size();
-        if (size == 0) {
+        if (futures.isEmpty()) {
             return Future.succeededFuture();
         }
 
-        return webClient.get(ctx.getHttpPort(),
-                ctx.getHttpServerHost(),
-                "/api/binding/inputs")
-                .as(BodyCodec.jsonObject())
-                .send()
-                .compose(resp -> {
-                    // Do something with response
-                    if (resp.statusCode() != 200) {
-                        log.error("get binding inputs failed, status code: {}", resp.statusCode());
-                        return Future.failedFuture("get binding inputs failed, status code: " + resp.statusCode());
-                    }
-                    JsonObject body = resp.body();
-                    if (body == null) {
-                        log.error("get binding inputs failed with null body");
-                        return Future.failedFuture("get binding inputs failed with null body");
-                    }
+        return Future.all(futures).mapEmpty();
+    }
 
-                    JsonArray bindingJson = body.getJsonArray("bindings");
-                    if (bindingJson == null || bindingJson.isEmpty()) {
-                        log.error("get input binding failed with null values");
-                        return Future.failedFuture("get input binding failed with null values");
-                    }
+    private Future<Void> startInputRead(RuntimeContext ctx, String name,
+            IInputBinding binding, JsonObject config) {
+        if (binding == null) {
+            return Future.failedFuture("binding not found");
+        }
 
-                    return Future.succeededFuture(bindingJson.stream()
-                            .map(JsonObject.class::cast)
-                            .collect(Collectors.toList()));
-                }).compose(res -> Future.all(res.stream()
-                        .map(item -> {
-                            String name = item.getString("name");
-                            IInputBinding binding = this.inputFutures.get(name);
-                            if (binding == null) {
-                                return Future.failedFuture("binding not found");
+        InputBindingReadRequest request = new InputBindingReadRequest()
+                .setName(name)
+                .setMetadata(config.getJsonObject(ConfigConstents.METADATA));
+        return binding.read(ctx, request, x -> {
+            if (x.succeeded()) {
+                InputBindingResponse res = x.result();
+                if (res == null) {
+                    log.info("input binding read success, name: {}", name);
+                    return;
+                }
+                String url = res == null || StringHelper.isEmpty(res.getUrl()) ? request.getName() : res.getUrl();
+                webClient.post(ctx.getHttpPort(), ctx.getHttpServerHost(), url)
+                        .sendJson(x.result() == null ? new JsonObject() : x.result().getBody())
+                        .onComplete(ar -> {
+                            if (ar.succeeded()) {
+                                log.info("input binding callback success, name: {}", name);
+                            } else {
+                                log.error("input binding callback failed, name: {}", name, ar.cause());
                             }
-
-                            InputBindingReadRequest request = new InputBindingReadRequest()
-                                    .setName(name)
-                                    .setMetadata(item.getJsonObject(ConfigConstents.METADATA));
-                            return binding.read(ctx, request);
-                        })
-                        .collect(Collectors.toList()))
-                        .mapEmpty());
-
+                        });
+            }
+        });
     }
 }
