@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-
 import org.mini.agent.runtime.RuntimeContext;
 import org.mini.agent.runtime.abstraction.IBinding;
 import org.mini.agent.runtime.abstraction.IInputBinding;
@@ -24,10 +22,8 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClient;
-import io.vertx.ext.web.codec.BodyCodec;
 import lombok.extern.slf4j.Slf4j;
 
 /**

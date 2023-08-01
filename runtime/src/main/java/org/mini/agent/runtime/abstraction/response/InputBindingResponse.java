@@ -1,8 +1,5 @@
 package org.mini.agent.runtime.abstraction.response;
 
-import io.vertx.core.Future;
-import io.vertx.core.http.HttpServerResponse;
-import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import lombok.Data;
 import lombok.experimental.Accessors;

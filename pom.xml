@@ -68,9 +68,8 @@
 
   <modules>
     <module>vertx-service-discovery-bridge-nacos</module>
-
     <module>runtime</module>
-
+    <module>sdk</module>
     <module>examples</module>
   </modules>
 </project>
