@@ -3,6 +3,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "App-SpringBoot",
+            "request": "launch",
+            "mainClass": "org.mini.agent.example.springboot.App",
+            "projectName": "springboot-demo"
+        },
+        {
+            "type": "java",
             "name": "Demo",
             "request": "launch",
             "projectName": "demo",
