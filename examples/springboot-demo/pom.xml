@@ -30,12 +30,6 @@
             <artifactId>lombok</artifactId>
         </dependency>
 
-        <!-- <dependency>
-            <groupId>org.yaml</groupId>
-            <artifactId>snakeyaml</artifactId>
-            <version>2.0</version>
-        </dependency> -->
-
         <dependency>
             <groupId>org.mini.agent.sdk.spring</groupId>
             <artifactId>springboot</artifactId>

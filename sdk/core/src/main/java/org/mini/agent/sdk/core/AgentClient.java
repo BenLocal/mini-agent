@@ -1,12 +1,12 @@
 package org.mini.agent.sdk.core;
 
 import org.mini.agent.sdk.core.impl.AgentClientImpl;
+import org.mini.agent.sdk.core.request.InvokeMethodRequest;
 
 import io.vertx.core.Future;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.client.HttpResponse;
 
 /**
@@ -23,7 +23,6 @@ public interface AgentClient {
         return new AgentClientImpl(vertx);
     }
 
-    Future<HttpResponse<Buffer>> invokeMethod(String appId, String methodPath,
-            HttpMethod method,
-            MultiMap headers, Buffer body);
+    Future<HttpResponse<Buffer>> invokeMethod(String httpMethod, MultiMap headers, Buffer body,
+            InvokeMethodRequest request);
 }

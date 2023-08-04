@@ -1,12 +1,23 @@
 package org.mini.agent.sdk.spring;
 
 import org.mini.agent.sdk.core.AgentClient;
+import org.mini.agent.sdk.core.AgentSyncClient;
+import org.mini.agent.sdk.core.VertxSingletonBuilder;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.boot.jackson.JsonComponent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 
-import io.vertx.core.Vertx;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.Module;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
+import io.vertx.core.buffer.Buffer;
 
 /**
  * 
@@ -19,23 +30,8 @@ import io.vertx.core.Vertx;
 @ConditionalOnWebApplication
 @ComponentScan("org.mini.agent.sdk.spring")
 public class AutoConfiguration {
-    @Bean(destroyMethod = "")
-    public Vertx vertx() {
-        return Vertx.vertx();
-    }
-
     @Bean
-    public AgentClient agentClient(Vertx vertx) {
-        return AgentClient.create(vertx);
-    }
-
-    @Bean
-    public AgentAsyncClient agentAsyncClient(AgentClient client) {
-        return new AgentAsyncClient(client);
-    }
-
-    @Bean
-    public AgentSyncClient agentSyncClient(AgentClient client) {
-        return new AgentSyncClient(client);
+    public AgentSpringSyncClient agentSpringSyncClient() {
+        return new AgentSpringSyncClient(AgentSyncClient.create());
     }
 }

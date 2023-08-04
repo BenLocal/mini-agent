@@ -88,7 +88,7 @@ public class MultiProducerSingleConsumerFactory extends BaseFactory<IMultiProduc
         // get all topic
         return webClient.get(ctx.getHttpPort(),
                 ctx.getHttpServerHost(),
-                "/api/mpsc/topics")
+                "/agent/mpsc/topics")
                 .as(BodyCodec.jsonObject())
                 .send()
                 .compose(resp -> {
@@ -118,6 +118,7 @@ public class MultiProducerSingleConsumerFactory extends BaseFactory<IMultiProduc
                         String topicName = topic.getString("topic");
                         String name = topic.getString("name");
                         String callback = topic.getString("callback");
+
                         ConsumerInfo item = this.mpscFutures.get(name);
                         results.add(item.getMpsc().consumer(topicName,
                                 item.getConfig()
@@ -128,8 +129,12 @@ public class MultiProducerSingleConsumerFactory extends BaseFactory<IMultiProduc
                                         return;
                                     }
 
+                                    String cb = callback;
+                                    if (!callback.startsWith("/")) {
+                                        cb = "/" + callback;
+                                    }
                                     ctx.getHttpAgentBridge().publish("mpsc.publish",
-                                            createConsumerMessage(callback, topicName, name, ar.result().body()));
+                                            createConsumerMessage(cb, topicName, name, ar.result().body()));
                                 }));
                     }
 
