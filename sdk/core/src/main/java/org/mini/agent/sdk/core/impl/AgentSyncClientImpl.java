@@ -5,12 +5,15 @@ import java.io.IOException;
 import org.mini.agent.sdk.core.AgentSyncClient;
 import org.mini.agent.sdk.core.BaseHttpClient;
 import org.mini.agent.sdk.core.HttpClientBuilder;
+import org.mini.agent.sdk.core.event.OutputBindingRequest;
 import org.mini.agent.sdk.core.request.InvokeMethodRequest;
+import org.mini.agent.sdk.core.request.PublishRequest;
 import org.mini.agent.sdk.core.response.AgentResponse;
 
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.json.JsonObject;
 import okhttp3.Headers;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
@@ -66,10 +69,6 @@ public class AgentSyncClientImpl extends BaseHttpClient implements AgentSyncClie
         }
 
         try (Response resp = client.newCall(requestBuilder.build()).execute()) {
-            if (resp == null) {
-                return AgentResponse.EMPTY;
-            }
-
             if (resp.isSuccessful()) {
                 return new AgentResponse(resp.code(), resp.body().bytes());
             }
@@ -78,4 +77,19 @@ public class AgentSyncClientImpl extends BaseHttpClient implements AgentSyncClie
         }
     }
 
+    @Override
+    public AgentResponse publish(PublishRequest request, MultiMap headers, Buffer body) throws IOException {
+        return invoke(publishUrl(request.getName(), request.getTopic()),
+                HttpMethod.POST, headers, body);
+    }
+
+    @Override
+    public AgentResponse binding(String name, OutputBindingRequest<?> request, MultiMap headers, Buffer body)
+            throws IOException {
+        JsonObject json = new JsonObject()
+                .put("operation", request.getOperation())
+                .put("metadata", request.getMetadata())
+                .put("body", body);
+        return invoke(bindingUrl(name), HttpMethod.POST, headers, json.toBuffer());
+    }
 }

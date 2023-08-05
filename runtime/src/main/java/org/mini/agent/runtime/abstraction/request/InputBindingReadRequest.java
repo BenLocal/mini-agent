@@ -17,6 +17,6 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class InputBindingReadRequest {
     private String name;
-
+    private String future;
     private JsonObject metadata;
 }

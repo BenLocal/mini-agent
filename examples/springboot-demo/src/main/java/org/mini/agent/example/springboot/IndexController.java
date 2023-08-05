@@ -2,6 +2,7 @@ package org.mini.agent.example.springboot;
 
 import org.mini.agent.sdk.core.Mpsc;
 import org.mini.agent.sdk.core.event.MpscResult;
+import org.mini.agent.sdk.core.event.OutputBindingRequest;
 import org.mini.agent.sdk.core.request.InvokeMethodRequest;
 import org.mini.agent.sdk.core.response.AgentResponse;
 import org.mini.agent.sdk.spring.AgentSpringSyncClient;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -32,7 +34,7 @@ public class IndexController {
     @Mpsc(name = "test1", topic = "springboot3")
     @PostMapping("test1")
     public String test(@RequestBody MpscResult result) {
-        log.info("test1: {}", result.asString());
+        log.info("test1 mq get message: {}", result.asString());
         return result.asString();
     }
 
@@ -46,5 +48,21 @@ public class IndexController {
         log.info("res: {}", res);
 
         return res.bodyAsString();
+    }
+
+    @RequestMapping("binding")
+    public String binding() {
+        HttpMetadata metadata = new HttpMetadata();
+        metadata.setUrl("http://www.baidu.com");
+
+        OutputBindingRequest<?> request = new OutputBindingRequest<HttpMetadata>()
+                .setOperation("get")
+                .setMetadata(metadata);
+        return client.binding("http_test", request, "");
+    }
+
+    @Data
+    private static class HttpMetadata {
+        private String url;
     }
 }

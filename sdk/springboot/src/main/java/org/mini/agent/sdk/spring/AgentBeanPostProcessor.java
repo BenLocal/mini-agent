@@ -112,10 +112,8 @@ public class AgentBeanPostProcessor implements BeanPostProcessor {
 
     // copy from dapr java-sdk
     private static String confirmLeadingSlash(String path) {
-        if (path != null && path.length() >= 1) {
-            if (!path.substring(0, 1).equals("/")) {
-                return "/" + path;
-            }
+        if (path != null && path.length() >= 1 && !path.substring(0, 1).equals("/")) {
+            return "/" + path;
         }
         return path;
     }

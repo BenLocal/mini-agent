@@ -3,7 +3,9 @@ package org.mini.agent.sdk.spring;
 import java.io.IOException;
 import org.mini.agent.sdk.core.AgentRuntimeException;
 import org.mini.agent.sdk.core.AgentSyncClient;
+import org.mini.agent.sdk.core.event.OutputBindingRequest;
 import org.mini.agent.sdk.core.request.InvokeMethodRequest;
+import org.mini.agent.sdk.core.request.PublishRequest;
 import org.mini.agent.sdk.core.response.AgentResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -27,10 +29,91 @@ public class AgentSpringSyncClient {
         this.client = client;
     }
 
-    public AgentResponse invokeMethod(InvokeMethodRequest request,
+    public AgentResponse invokeGetMethod(InvokeMethodRequest request) throws AgentRuntimeException {
+        return invokeMethod(request, HttpMethod.GET, null, null);
+    }
+
+    public <T> T invokeMethodAsJson(InvokeMethodRequest request, HttpMethod httpMethod,
+            HttpHeaders headers,
+            byte[] body,
+            Class<T> clazz)
+            throws AgentRuntimeException {
+        return invokeMethod(request, httpMethod, headers, body == null ? null : Buffer.buffer(body)).bodyAsJson(clazz);
+    }
+
+    public <T> T invokeGetMethodAsJson(InvokeMethodRequest request, Class<T> clazz) throws AgentRuntimeException {
+        return invokeMethodAsJson(request, HttpMethod.GET, null, null, clazz);
+    }
+
+    public <T> T invokePostMethodAsJson(InvokeMethodRequest request, Class<T> clazz) throws AgentRuntimeException {
+        return invokeMethodAsJson(request, HttpMethod.POST, null, null, clazz);
+    }
+
+    public boolean publish(PublishRequest request, byte[] body) throws AgentRuntimeException {
+        return publish(request, null, body == null ? null : Buffer.buffer(body)).isOk();
+    }
+
+    public boolean publish(PublishRequest request, String body) throws AgentRuntimeException {
+        return publish(request, null, body == null ? null : Buffer.buffer(body)).isOk();
+    }
+
+    public <T> T binding(String name, OutputBindingRequest<?> request, byte[] body, Class<T> clazz)
+            throws AgentRuntimeException {
+        AgentResponse res = binding(name, request, null, body == null ? null : Buffer.buffer(body));
+        if (res.isOk()) {
+            return res.bodyAsJson(clazz);
+        }
+
+        return null;
+    }
+
+    public <T> T binding(String name, OutputBindingRequest<?> request, String body, Class<T> clazz)
+            throws AgentRuntimeException {
+        AgentResponse res = binding(name, request, null, body == null ? null : Buffer.buffer(body));
+        if (res.isOk()) {
+            return res.bodyAsJson(clazz);
+        }
+
+        return null;
+    }
+
+    public String binding(String name, OutputBindingRequest<?> request, String body) throws AgentRuntimeException {
+        AgentResponse res = binding(name, request, null, body == null ? null : Buffer.buffer(body));
+        if (res.isOk()) {
+            return res.bodyAsString();
+        }
+
+        return null;
+    }
+
+    public String binding(String name, OutputBindingRequest<?> request, byte[] body) throws AgentRuntimeException {
+        AgentResponse res = binding(name, request, null, body == null ? null : Buffer.buffer(body));
+        if (res.isOk()) {
+            return res.bodyAsString();
+        }
+
+        return null;
+    }
+
+    private AgentResponse publish(PublishRequest request, HttpHeaders headers, Buffer body)
+            throws AgentRuntimeException {
+        try {
+            MultiMap multiMap = null;
+            if (headers != null) {
+                multiMap = MultiMap.caseInsensitiveMultiMap();
+                multiMap.addAll(headers.toSingleValueMap());
+            }
+
+            return client.publish(request, multiMap, body);
+        } catch (IOException e) {
+            throw new AgentRuntimeException(e);
+        }
+    }
+
+    private AgentResponse invokeMethod(InvokeMethodRequest request,
             HttpMethod httpMethod,
             HttpHeaders headers,
-            byte[] body) throws AgentRuntimeException {
+            Buffer body) throws AgentRuntimeException {
         try {
 
             MultiMap multiMap = null;
@@ -39,34 +122,24 @@ public class AgentSpringSyncClient {
                 multiMap.addAll(headers.toSingleValueMap());
             }
 
-            Buffer buffer = null;
-            if (body != null) {
-                buffer = Buffer.buffer(body);
-            }
-
-            return client.invokeMethod(httpMethod.name(), multiMap, buffer, request);
+            return client.invokeMethod(httpMethod.name(), multiMap, body, request);
         } catch (IOException e) {
             throw new AgentRuntimeException(e);
         }
     }
 
-    public AgentResponse invokeGetMethod(InvokeMethodRequest request) throws AgentRuntimeException {
-        return invokeMethod(request, HttpMethod.GET, null, null);
-    }
-
-    public <T> T invokeMethodJson(InvokeMethodRequest request, HttpMethod httpMethod,
-            HttpHeaders headers,
-            byte[] body,
-            Class<T> clazz)
+    private AgentResponse binding(String name, OutputBindingRequest<?> request, HttpHeaders headers, Buffer body)
             throws AgentRuntimeException {
-        return invokeMethod(request, httpMethod, headers, body).bodyAsJson(clazz);
-    }
+        try {
+            MultiMap multiMap = null;
+            if (headers != null) {
+                multiMap = MultiMap.caseInsensitiveMultiMap();
+                multiMap.addAll(headers.toSingleValueMap());
+            }
 
-    public <T> T invokeGetMethodJson(InvokeMethodRequest request, Class<T> clazz) throws AgentRuntimeException {
-        return invokeMethodJson(request, HttpMethod.GET, null, null, clazz);
-    }
-
-    public <T> T invokePostMethodJson(InvokeMethodRequest request, Class<T> clazz) throws AgentRuntimeException {
-        return invokeMethodJson(request, HttpMethod.POST, null, null, clazz);
+            return client.binding(name, request, multiMap, body);
+        } catch (IOException e) {
+            throw new AgentRuntimeException(e);
+        }
     }
 }

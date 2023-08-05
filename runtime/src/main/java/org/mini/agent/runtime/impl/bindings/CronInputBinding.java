@@ -80,7 +80,6 @@ public class CronInputBinding implements IInputBinding, IOutputBinding {
             JsonObject payload = new JsonObject();
             String instanceId = String.format("%s-%s", id, UUID.randomUUID().toString());
             payload.put("id", id);
-            payload.put("type", "cron");
             payload.put("instanceId", instanceId);
             callback.handle(Future.succeededFuture(new InputBindingResponse()
                     .setBody(payload)));

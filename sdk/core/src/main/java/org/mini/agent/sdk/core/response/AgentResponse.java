@@ -19,6 +19,10 @@ public class AgentResponse {
     private Buffer body;
     private int statusCode;
 
+    public boolean isOk() {
+        return this.statusCode == 200;
+    }
+
     private AgentResponse() {
         this.statusCode = -1;
         this.body = null;

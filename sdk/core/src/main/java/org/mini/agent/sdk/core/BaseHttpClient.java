@@ -15,6 +15,14 @@ public class BaseHttpClient {
         return String.format("invoke/%s/method/%s", appId, methodPath);
     }
 
+    protected String publishUrl(String name, String topic) {
+        return String.format("mpsc/producer/%s/%s", name, topic);
+    }
+
+    protected String bindingUrl(String name) {
+        return String.format("binding/%s", name);
+    }
+
     protected String host() {
         return DEFAULT_HOST_NAME;
     }

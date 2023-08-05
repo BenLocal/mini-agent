@@ -1,7 +1,9 @@
 package org.mini.agent.sdk.core;
 
+import org.mini.agent.sdk.core.event.OutputBindingRequest;
 import org.mini.agent.sdk.core.impl.AgentClientImpl;
 import org.mini.agent.sdk.core.request.InvokeMethodRequest;
+import org.mini.agent.sdk.core.request.PublishRequest;
 
 import io.vertx.core.Future;
 import io.vertx.core.MultiMap;
@@ -25,4 +27,8 @@ public interface AgentClient {
 
     Future<HttpResponse<Buffer>> invokeMethod(String httpMethod, MultiMap headers, Buffer body,
             InvokeMethodRequest request);
+
+    Future<HttpResponse<Buffer>> publish(PublishRequest request, MultiMap headers, Buffer body);
+
+    Future<HttpResponse<Buffer>> binding(String name, OutputBindingRequest<?> request, MultiMap headers, Buffer body);
 }

@@ -103,7 +103,7 @@ public class BindingFactory extends BaseFactory<IBinding> {
                 // register input binding
                 inputFutures.put(name, (IInputBinding) binding);
                 // start input bindings
-                futures.add(startInputRead(ctx, name, (IInputBinding) binding, item));
+                futures.add(startInputRead(ctx, name, future, (IInputBinding) binding, item));
                 log.info("register input binding, future: {}, name: {}", future, name);
             }
 
@@ -121,7 +121,9 @@ public class BindingFactory extends BaseFactory<IBinding> {
         return Future.all(futures).mapEmpty();
     }
 
-    private Future<Void> startInputRead(RuntimeContext ctx, String name,
+    private Future<Void> startInputRead(RuntimeContext ctx,
+            String name,
+            String future,
             IInputBinding binding, JsonObject config) {
         if (binding == null) {
             return Future.failedFuture("binding not found");
@@ -129,36 +131,45 @@ public class BindingFactory extends BaseFactory<IBinding> {
 
         InputBindingReadRequest request = new InputBindingReadRequest()
                 .setName(name)
+                .setFuture(future)
                 .setMetadata(config.getJsonObject(ConfigConstents.METADATA));
         return binding.read(ctx, request,
-                x -> onInputBindingResponse(x, name, ctx));
+                x -> onInputBindingResponse(x, name, future, ctx));
     }
 
     private void onInputBindingResponse(AsyncResult<InputBindingResponse> response,
-            String name, RuntimeContext ctx) {
-        if (response.succeeded()) {
-            InputBindingResponse res = response.result();
-            if (res == null) {
-                log.info("input binding read success, name: {}", name);
-                return;
-            }
-            String url = StringHelper
-                    .confirmLeadingSlash(res == null || StringHelper.isEmpty(res.getUrl()) ? name : res.getUrl());
-            webClient.post(ctx.getHttpPort(), ctx.getHttpServerHost(), url)
-                    .sendJson(response.result() == null ? new JsonObject() : response.result().getBody())
-                    .onComplete(ar -> {
-                        if (ar.succeeded()) {
-                            if (ar.result() != null) {
-                                log.info("input binding callback success, url: {}, status code: {}", url,
-                                        ar.result().statusCode());
-                            } else {
-                                log.info("input binding callback success, but result is null. url: {}",
-                                        url);
-                            }
-                        } else {
-                            log.error("input binding callback failed, url: {}", url, ar.cause());
-                        }
-                    });
+            String name, String future, RuntimeContext ctx) {
+        if (response.failed()) {
+            log.error("input binding read failed, name: {}, cause: {}", name, response.cause().getMessage());
+            return;
         }
+
+        InputBindingResponse res = response.result();
+        if (res == null) {
+            log.info("input binding read success, name: {}", name);
+            return;
+        }
+        String url = StringHelper
+                .confirmLeadingSlash(res == null || StringHelper.isEmpty(res.getUrl()) ? name : res.getUrl());
+
+        JsonObject resp = new JsonObject().put("name", name)
+                .put("future", future)
+                .put("body", res.getBody() == null ? new JsonObject() : res.getBody());
+
+        webClient.post(ctx.getHttpPort(), ctx.getHttpServerHost(), url)
+                .sendJson(resp)
+                .onComplete(ar -> {
+                    if (ar.succeeded()) {
+                        if (ar.result() != null) {
+                            log.info("input binding callback success, url: {}, status code: {}", url,
+                                    ar.result().statusCode());
+                        } else {
+                            log.info("input binding callback success, but result is null. url: {}",
+                                    url);
+                        }
+                    } else {
+                        log.error("input binding callback failed, url: {}", url, ar.cause());
+                    }
+                });
     }
 }
