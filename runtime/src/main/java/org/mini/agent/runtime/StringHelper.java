@@ -1,4 +1,4 @@
-package org.mini.agent.runtime.impl;
+package org.mini.agent.runtime;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,5 +27,12 @@ public final class StringHelper {
 
     public static boolean isEmpty(String str) {
         return str == null || str.isEmpty();
+    }
+
+    public static String confirmLeadingSlash(String path) {
+        if (path != null && path.length() >= 1 && !path.substring(0, 1).equals("/")) {
+            return "/" + path;
+        }
+        return path;
     }
 }

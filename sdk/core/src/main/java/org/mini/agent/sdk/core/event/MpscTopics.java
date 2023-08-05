@@ -1,8 +1,6 @@
 package org.mini.agent.sdk.core.event;
 
 import java.util.Collection;
-import java.util.List;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 

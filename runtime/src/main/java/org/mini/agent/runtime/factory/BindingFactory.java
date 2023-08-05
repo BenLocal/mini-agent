@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.mini.agent.runtime.RuntimeContext;
+import org.mini.agent.runtime.StringHelper;
 import org.mini.agent.runtime.abstraction.IBinding;
 import org.mini.agent.runtime.abstraction.IInputBinding;
 import org.mini.agent.runtime.abstraction.IOutputBinding;
@@ -14,7 +15,6 @@ import org.mini.agent.runtime.abstraction.response.InputBindingResponse;
 import org.mini.agent.runtime.abstraction.response.OutputBindingResponse;
 import org.mini.agent.runtime.config.ConfigConstents;
 import org.mini.agent.runtime.config.ConfigUtils;
-import org.mini.agent.runtime.impl.StringHelper;
 import org.mini.agent.runtime.impl.bindings.CronInputBinding;
 import org.mini.agent.runtime.impl.bindings.HttpOutputBinding;
 
@@ -142,14 +142,21 @@ public class BindingFactory extends BaseFactory<IBinding> {
                 log.info("input binding read success, name: {}", name);
                 return;
             }
-            String url = res == null || StringHelper.isEmpty(res.getUrl()) ? name : res.getUrl();
-            webClient.post(ctx.getHttpPort(), ctx.getHttpServerHost(), "/" + url)
+            String url = StringHelper
+                    .confirmLeadingSlash(res == null || StringHelper.isEmpty(res.getUrl()) ? name : res.getUrl());
+            webClient.post(ctx.getHttpPort(), ctx.getHttpServerHost(), url)
                     .sendJson(response.result() == null ? new JsonObject() : response.result().getBody())
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
-                            log.info("input binding callback success, name: {}", name);
+                            if (ar.result() != null) {
+                                log.info("input binding callback success, url: {}, status code: {}", url,
+                                        ar.result().statusCode());
+                            } else {
+                                log.info("input binding callback success, but result is null. url: {}",
+                                        url);
+                            }
                         } else {
-                            log.error("input binding callback failed, name: {}", name, ar.cause());
+                            log.error("input binding callback failed, url: {}", url, ar.cause());
                         }
                     });
         }

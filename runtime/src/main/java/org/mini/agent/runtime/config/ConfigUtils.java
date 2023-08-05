@@ -3,7 +3,7 @@ package org.mini.agent.runtime.config;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.mini.agent.runtime.impl.StringHelper;
+import org.mini.agent.runtime.StringHelper;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;

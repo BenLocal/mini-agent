@@ -2,7 +2,6 @@ package org.mini.agent.sdk.core.event;
 
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.Json;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 
 /**
@@ -16,21 +15,21 @@ import lombok.Data;
 public class MpscResult {
     private String topic;
     private String name;
-    private Buffer msg;
+    private Buffer body;
 
     public <T> T json(Class<T> clazz) {
-        if (msg == null) {
+        if (body == null) {
             return null;
         }
 
-        return Json.decodeValue(msg, clazz);
+        return Json.decodeValue(body, clazz);
     }
 
     public String asString() {
-        if (msg == null) {
+        if (body == null) {
             return null;
         }
 
-        return msg.toString();
+        return body.toString();
     }
 }

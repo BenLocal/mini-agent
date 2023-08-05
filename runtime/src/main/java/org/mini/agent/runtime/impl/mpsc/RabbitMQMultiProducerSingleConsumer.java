@@ -3,17 +3,16 @@ package org.mini.agent.runtime.impl.mpsc;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.mini.agent.runtime.RuntimeContext;
+import org.mini.agent.runtime.StringHelper;
 import org.mini.agent.runtime.abstraction.IMultiProducerSingleConsumer;
 import org.mini.agent.runtime.abstraction.request.PublishRequest;
 import org.mini.agent.runtime.config.ConfigConstents;
-import org.mini.agent.runtime.impl.StringHelper;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
 import io.vertx.rabbitmq.RabbitMQClient;
-import io.vertx.rabbitmq.RabbitMQMessage;
 import io.vertx.rabbitmq.RabbitMQOptions;
 import lombok.extern.slf4j.Slf4j;
 
@@ -78,7 +77,7 @@ public class RabbitMQMultiProducerSingleConsumer implements IMultiProducerSingle
     }
 
     @Override
-    public Future<Void> consumer(String topic, JsonObject config, Handler<AsyncResult<RabbitMQMessage>> handler) {
+    public Future<Void> consumer(String topic, JsonObject config, Handler<AsyncResult<JsonObject>> handler) {
         String consumerID = config.getString("consumerID");
         String queueName = String.format("%s-%s", consumerID, topic);
 
@@ -90,7 +89,9 @@ public class RabbitMQMultiProducerSingleConsumer implements IMultiProducerSingle
                 .compose(x -> client.queueBind(x.getQueue(), topic, routingKey).map(x))
                 .compose(x -> client.basicConsumer(queueName).onSuccess(consumer -> {
                     log.info("consumer start, routingKey: {}", routingKey);
-                    consumer.handler(message -> handler.handle(Future.succeededFuture(message)))
+                    consumer.handler(message -> handler.handle(Future.succeededFuture(new JsonObject()
+                            .put("body", message.body())
+                            .put("matedata", null))))
                             .exceptionHandler(e -> handler.handle(Future.failedFuture(e)))
                             .endHandler(v -> {
                                 // 删掉queue的时候，会触发endHandler

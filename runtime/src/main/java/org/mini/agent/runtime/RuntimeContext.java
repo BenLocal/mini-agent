@@ -3,7 +3,6 @@ package org.mini.agent.runtime;
 import org.mini.agent.runtime.factory.BindingFactory;
 import org.mini.agent.runtime.factory.MultiProducerSingleConsumerFactory;
 import org.mini.agent.runtime.factory.ServiceDiscoveryFactory;
-import org.mini.agent.runtime.impl.StringHelper;
 import org.mini.agent.runtime.impl.bridge.HttpAgentBridge;
 
 import io.vertx.core.Context;

@@ -48,7 +48,7 @@ public class Starter {
             ctx.request().body().compose(b -> {
                 JsonObject body = b.toJsonObject();
                 System.out.println("callback topic1: " + body.toString());
-                System.out.println("messag:" + body.getBuffer("msg").toString());
+                System.out.println("body:" + body.getBuffer("body").toString());
                 return Future.succeededFuture();
             }).onComplete(x -> {
                 if (x.succeeded()) {
@@ -63,7 +63,7 @@ public class Starter {
             ctx.request().body().compose(b -> {
                 JsonObject body = b.toJsonObject();
                 System.out.println("callback topic2: " + body.toString());
-                System.out.println("messag:" + body.getBuffer("msg").toString());
+                System.out.println("body:" + body.getBuffer("body").toString());
                 return Future.succeededFuture();
             }).onComplete(x -> {
                 if (x.succeeded()) {

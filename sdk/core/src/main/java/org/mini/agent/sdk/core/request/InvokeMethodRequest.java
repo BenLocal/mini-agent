@@ -1,7 +1,6 @@
 package org.mini.agent.sdk.core.request;
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 
 /**

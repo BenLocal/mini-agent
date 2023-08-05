@@ -15,7 +15,6 @@ import org.mini.agent.runtime.impl.mpsc.RabbitMQMultiProducerSingleConsumer;
 
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClient;
@@ -129,12 +128,8 @@ public class MultiProducerSingleConsumerFactory extends BaseFactory<IMultiProduc
                                         return;
                                     }
 
-                                    String cb = callback;
-                                    if (!callback.startsWith("/")) {
-                                        cb = "/" + callback;
-                                    }
                                     ctx.getHttpAgentBridge().publish("mpsc.publish",
-                                            createConsumerMessage(cb, topicName, name, ar.result().body()));
+                                            createConsumerMessage(callback, topicName, name, ar.result()));
                                 }));
                     }
 
@@ -145,11 +140,12 @@ public class MultiProducerSingleConsumerFactory extends BaseFactory<IMultiProduc
 
     private JsonObject createConsumerMessage(String callback,
             String topicName, String name,
-            Buffer message) {
+            JsonObject message) {
         JsonObject data = new JsonObject()
                 .put("topic", topicName)
                 .put("name", name)
-                .put("msg", message);
+                .put("body", message.getBuffer("body"))
+                .put("metadata", message.getJsonObject("metadata"));
 
         return new JsonObject().put("callback", callback)
                 .put("data", data);

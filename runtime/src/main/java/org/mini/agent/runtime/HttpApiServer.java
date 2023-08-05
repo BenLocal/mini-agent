@@ -1,7 +1,6 @@
 package org.mini.agent.runtime;
 
 import org.mini.agent.runtime.abstraction.request.PublishRequest;
-import org.mini.agent.runtime.impl.StringHelper;
 
 import io.vertx.circuitbreaker.CircuitBreaker;
 import io.vertx.circuitbreaker.CircuitBreakerOptions;
