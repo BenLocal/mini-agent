@@ -1,7 +1,7 @@
 package org.mini.agent.runtime.impl.consumer;
 
 import org.mini.agent.runtime.RuntimeContext;
-import org.mini.agent.runtime.abstraction.IAgentConsumer;
+import org.mini.agent.runtime.IAgentConsumer;
 
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
@@ -22,7 +22,7 @@ public class MpscProducerConsumer implements IAgentConsumer {
 
     public MpscProducerConsumer(RuntimeContext runtimeContext) {
         this.runtimeContext = runtimeContext;
-        this.client = WebClient.create(runtimeContext.getVertx());
+        this.client = WebClient.create(runtimeContext.vertx());
     }
 
     @Override

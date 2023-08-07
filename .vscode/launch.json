@@ -32,11 +32,7 @@
                 "--agent-http-port",
                 9999,
                 "--http-port",
-                8675,
-                "--",
-                "java",
-                "-jar",
-                "aa.jar"
+                8675
             ]
         }
     ]

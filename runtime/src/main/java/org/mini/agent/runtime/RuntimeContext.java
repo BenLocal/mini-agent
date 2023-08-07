@@ -1,9 +1,13 @@
 package org.mini.agent.runtime;
 
-import org.mini.agent.runtime.factory.BindingFactory;
-import org.mini.agent.runtime.factory.MultiProducerSingleConsumerFactory;
-import org.mini.agent.runtime.factory.ServiceDiscoveryFactory;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.mini.agent.runtime.impl.bridge.HttpAgentBridge;
+import org.mini.agent.runtime.processor.BindingProcessor;
+import org.mini.agent.runtime.processor.IRuntimeProcessor;
+import org.mini.agent.runtime.processor.MultiProducerSingleConsumerProcessor;
+import org.mini.agent.runtime.processor.ServiceDiscoveryProcessor;
 
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
@@ -16,7 +20,12 @@ import io.vertx.core.json.JsonObject;
  * @Version 1.0
  *
  */
-public class RuntimeContext {
+public class RuntimeContext implements IRuntimeContext {
+    private static final Map<String, IRuntimeProcessor> processors = new HashMap<>();
+    private static final String SERVICE_DISCOVERY_PROCESSOR = "ServiceDiscoveryProcessor";
+    private static final String MPSC_PROCESSOR = "MPSCProcessor";
+    private static final String BINDING_PROCESSOR = "BindingProcessor";
+
     private final String namespace;
     private final String appId;
     // porxy http server port
@@ -24,17 +33,16 @@ public class RuntimeContext {
     // agent http server port, this port is used to communicate with agent
     private final int agentHttpPort;
     private final String httpServerHost;
-
     private final Vertx vertx;
     private final Context vertxContext;
-
-    private final ServiceDiscoveryFactory serviceDiscoveryFactory;
-    private final MultiProducerSingleConsumerFactory multiProducerSingleConsumerFactory;
-    private final BindingFactory bindingFactory;
-
     private final HttpAgentBridge httpAgentBridge;
-
     private JsonObject config;
+
+    static {
+        processors.put(SERVICE_DISCOVERY_PROCESSOR, new ServiceDiscoveryProcessor());
+        processors.put(MPSC_PROCESSOR, new MultiProducerSingleConsumerProcessor());
+        processors.put(BINDING_PROCESSOR, new BindingProcessor());
+    }
 
     public RuntimeContext(Vertx vertx,
             Context vertxContext,
@@ -46,16 +54,9 @@ public class RuntimeContext {
         this.namespace = namespace;
         this.vertx = vertx;
         this.vertxContext = vertxContext;
-
         this.httpPort = tryConvertToInt(httpPort, 9999);
         this.agentHttpPort = tryConvertToInt(agentHttpPort, 80);
-
         this.httpServerHost = "127.0.0.1";
-
-        this.serviceDiscoveryFactory = new ServiceDiscoveryFactory();
-        this.multiProducerSingleConsumerFactory = new MultiProducerSingleConsumerFactory(vertx);
-        this.bindingFactory = new BindingFactory(vertx);
-
         this.httpAgentBridge = new HttpAgentBridge(vertx);
     }
 
@@ -82,46 +83,24 @@ public class RuntimeContext {
         return this.config;
     }
 
-    /**
-     * @return the namespace
-     */
-    public String getNamespace() {
+    @Override
+    public String namespace() {
         return namespace;
     }
 
-    /**
-     * @return the appId
-     */
-    public String getAppId() {
+    @Override
+    public String appId() {
         return appId;
     }
 
-    /**
-     * @return the serviceDiscoveryFactory
-     */
-    public ServiceDiscoveryFactory getServiceDiscoveryFactory() {
-        return serviceDiscoveryFactory;
-    }
-
-    /**
-     * @return the vertx
-     */
-    public Vertx getVertx() {
+    @Override
+    public Vertx vertx() {
         return vertx;
     }
 
-    /**
-     * @return the vertxContext
-     */
-    public Context getVertxContext() {
+    @Override
+    public Context vertxContext() {
         return vertxContext;
-    }
-
-    /**
-     * @return the multiProducerSingleConsumerFactory
-     */
-    public MultiProducerSingleConsumerFactory getMultiProducerSingleConsumerFactory() {
-        return multiProducerSingleConsumerFactory;
     }
 
     /**
@@ -152,10 +131,19 @@ public class RuntimeContext {
         return httpPort;
     }
 
-    /**
-     * @return the bindingFactory
-     */
-    public BindingFactory getBindingFactory() {
-        return bindingFactory;
+    public Map<String, IRuntimeProcessor> getProcessors() {
+        return processors;
+    }
+
+    public ServiceDiscoveryProcessor getServiceDiscovery() {
+        return (ServiceDiscoveryProcessor) processors.get(SERVICE_DISCOVERY_PROCESSOR);
+    }
+
+    public MultiProducerSingleConsumerProcessor getMPSCProcessor() {
+        return (MultiProducerSingleConsumerProcessor) processors.get(MPSC_PROCESSOR);
+    }
+
+    public BindingProcessor getBindingProcessor() {
+        return (BindingProcessor) processors.get(BINDING_PROCESSOR);
     }
 }

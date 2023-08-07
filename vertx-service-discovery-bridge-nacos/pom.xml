@@ -9,7 +9,7 @@
 
   <groupId>io.vertx.servicediscovery.nacos</groupId>
   <artifactId>vertx-service-discovery-bridge-nacos</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0.0-SNAPSHOT</version>
 
   <name>vertx-service-discovery-bridge-nacos</name>
 

@@ -32,7 +32,7 @@ public class RuntimeConfigLoader {
     }
 
     public Future<JsonObject> load(RuntimeContext ctx) {
-        return ConfigRetriever.create(ctx.getVertx(), options).getConfig();
+        return ConfigRetriever.create(ctx.vertx(), options).getConfig();
     }
 
     private void addConfigDir(String path) {

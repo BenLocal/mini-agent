@@ -58,8 +58,8 @@ public class MainVerticle extends AbstractVerticle {
                                 commandLine.getOptionValue("http-port"));
 
                 log.info("Launcher starting runtime for app {} in namespace {}",
-                                appContext.getAppId(),
-                                appContext.getNamespace());
+                                appContext.appId(),
+                                appContext.namespace());
                 vertx.deployVerticle(new Runtime(vertx, appContext));
         }
 }

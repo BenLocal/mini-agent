@@ -1,6 +1,11 @@
 package org.mini.agent.runtime;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map.Entry;
+
 import org.mini.agent.runtime.config.RuntimeConfigLoader;
+import org.mini.agent.runtime.processor.IRuntimeProcessor;
 
 import io.vertx.core.Context;
 import io.vertx.core.Future;
@@ -71,51 +76,17 @@ public class Runtime implements Verticle {
         this.appContext.getHttpAgentBridge()
                 .init(this.appContext);
 
-        return Future.all(initServiceDiscovery(),
-                initMultiProducerSingleConsumer(),
-                initInputAndOutputBinding())
+        List<Future<Void>> processor = new ArrayList<>();
+
+        for (Entry<String, IRuntimeProcessor> item : this.appContext.getProcessors().entrySet()) {
+            processor.add(item.getValue().start(this.appContext));
+        }
+
+        return Future.all(processor)
                 // ignore err and return empty
                 .recover(err -> {
                     log.error("runtime start failed", err);
                     return Future.succeededFuture();
                 }).mapEmpty();
-    }
-
-    private Future<Void> initServiceDiscovery() {
-        // register service discovery
-        this.appContext.getServiceDiscoveryFactory().register(this.appContext);
-
-        // set service discovery
-        JsonObject conf = this.appContext.getConfig()
-                .getJsonObject("config");
-        if (conf == null) {
-            return Future.failedFuture("config is null");
-        }
-
-        JsonObject sdConf = conf.getJsonObject("nameResolution");
-        if (sdConf == null) {
-            return Future.failedFuture("serviceDiscovery config is null");
-        }
-
-        return this.appContext.getServiceDiscoveryFactory()
-                .init(this.appContext, sdConf);
-    }
-
-    // set multi producer single consumer
-    private Future<Void> initMultiProducerSingleConsumer() {
-        // register multi producer single consumer
-        this.appContext.getMultiProducerSingleConsumerFactory().register(this.appContext);
-
-        return this.appContext.getMultiProducerSingleConsumerFactory()
-                .init(this.appContext, this.appContext.getConfig());
-    }
-
-    // set out bridge
-    private Future<Void> initInputAndOutputBinding() {
-        // register output binding
-        this.appContext.getBindingFactory().register(this.appContext);
-
-        return this.appContext.getBindingFactory()
-                .init(this.appContext, this.appContext.getConfig());
     }
 }

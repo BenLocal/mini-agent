@@ -1,6 +1,6 @@
 package org.mini.agent.runtime;
 
-import org.mini.agent.runtime.abstraction.request.PublishRequest;
+import org.mini.agent.runtime.request.PublishRequest;
 
 import io.vertx.circuitbreaker.CircuitBreaker;
 import io.vertx.circuitbreaker.CircuitBreakerOptions;
@@ -33,11 +33,11 @@ public class HttpApiServer {
 
     public HttpApiServer(RuntimeContext context) {
         this.context = context;
-        this.vertx = context.getVertx();
+        this.vertx = context.vertx();
         this.router = Router.router(vertx);
         this.proxyClient = vertx.createHttpClient();
 
-        this.apiBreaker = CircuitBreaker.create("my-circuit-breaker", vertx,
+        this.apiBreaker = CircuitBreaker.create("http-proxy-circuit-breaker", vertx,
                 new CircuitBreakerOptions().setMaxFailures(5).setTimeout(2000));
     }
 
@@ -65,14 +65,14 @@ public class HttpApiServer {
         HttpServerRequest request = ctx.request();
         // reverse proxy
         ProxyRequest proxyRequest = ProxyRequest.reverseProxy(request);
-        if (appId.equals(context.getAppId())) {
+        if (appId.equals(context.appId())) {
             // local invoke
             proxyRequest.setURI(String.format("/%s", ctx.pathParam("*")));
         }
 
         apiBreaker.<ProxyResponse>execute(promise ->
         // get host and port by appId (name resolution)
-        context.getServiceDiscoveryFactory().getRegister()
+        context.getServiceDiscovery().current()
                 .getRecord(appId)
                 .compose(item -> {
                     if (item == null) {
@@ -106,7 +106,7 @@ public class HttpApiServer {
             return;
         }
 
-        ctx.request().bodyHandler(buffer -> context.getMultiProducerSingleConsumerFactory()
+        ctx.request().bodyHandler(buffer -> context.getMPSCProcessor()
                 .send(name, new PublishRequest()
                         .setTopic(topic)
                         .setPayload(buffer))
@@ -124,7 +124,7 @@ public class HttpApiServer {
             return;
         }
         String megKey = "binding";
-        ctx.request().bodyHandler(buffer -> this.context.getBindingFactory()
+        ctx.request().bodyHandler(buffer -> this.context.getBindingProcessor()
                 .invoke(name, buffer)
                 .onSuccess(x -> onHttpSendComplete(x == null
                         ? ctx.response().end()

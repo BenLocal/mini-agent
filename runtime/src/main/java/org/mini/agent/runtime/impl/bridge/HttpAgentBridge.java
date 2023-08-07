@@ -2,13 +2,12 @@ package org.mini.agent.runtime.impl.bridge;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.mini.agent.runtime.RuntimeContext;
-import org.mini.agent.runtime.abstraction.IAgentConsumer;
-import org.mini.agent.runtime.abstraction.IAgentBridge;
+import org.mini.agent.runtime.IAgentConsumer;
+import org.mini.agent.runtime.IAgentBridge;
 import org.mini.agent.runtime.impl.consumer.MpscProducerConsumer;
-
-import com.google.common.base.Function;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;

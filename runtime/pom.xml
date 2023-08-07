@@ -36,6 +36,10 @@
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
+      <artifactId>vertx-web-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
       <artifactId>vertx-codegen</artifactId>
     </dependency>
     <dependency>
@@ -45,10 +49,6 @@
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-config</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-rabbitmq-client</artifactId>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
@@ -73,15 +73,29 @@
     </dependency>
 
     <dependency>
-      <groupId>com.noenv</groupId>
-      <artifactId>vertx-cronutils</artifactId>
-      <version>4.4.4</version>
+      <groupId>org.mini.agent.runtime</groupId>
+      <artifactId>runtime-api</artifactId>
+      <version>1.0.0-SNAPSHOT</version>
     </dependency>
-
     <dependency>
-      <groupId>io.vertx.servicediscovery.nacos</groupId>
-      <artifactId>vertx-service-discovery-bridge-nacos</artifactId>
-      <version>1.0-SNAPSHOT</version>
+      <groupId>org.mini.agent.runtime.sd</groupId>
+      <artifactId>runtime-service-discovery-nacos</artifactId>
+      <version>1.0.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.mini.agent.runtime.mpsc</groupId>
+      <artifactId>runtime-mpsc-rabbitmq</artifactId>
+      <version>1.0.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.mini.agent.runtime.binding</groupId>
+      <artifactId>runtime-binding-http</artifactId>
+      <version>1.0.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.mini.agent.runtime.binding</groupId>
+      <artifactId>runtime-binding-cron</artifactId>
+      <version>1.0.0-SNAPSHOT</version>
     </dependency>
 
     <dependency>

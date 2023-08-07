@@ -44,6 +44,7 @@
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-slf4j-impl</artifactId>
         <version>${log4j2.version}</version>
+        <scope>provided</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
@@ -68,6 +69,12 @@
 
   <modules>
     <module>vertx-service-discovery-bridge-nacos</module>
+
+    <module>runtime-api</module>
+    <module>runtime-mpsc-rabbitmq</module>
+    <module>runtime-service-discovery-nacos</module>
+    <module>runtime-binding-http</module>
+    <module>runtime-binding-cron</module>
     <module>runtime</module>
     <module>sdk</module>
     <module>examples</module>
