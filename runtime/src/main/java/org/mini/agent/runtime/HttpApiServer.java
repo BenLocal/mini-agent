@@ -1,5 +1,6 @@
 package org.mini.agent.runtime;
 
+import org.mini.agent.runtime.actor.ActorInfo;
 import org.mini.agent.runtime.request.PublishRequest;
 
 import io.vertx.circuitbreaker.CircuitBreaker;
@@ -58,6 +59,11 @@ public class HttpApiServer {
         this.router.post("/mpsc/producer/:name/:topic").handler(this::mpscProducer);
         this.router.post("/binding/:name").handler(this::outputBinding);
         this.router.get("/healthz").handler(this::healthz);
+        this.router.post("/actor/:actorType/register").handler(this::registerActor);
+        this.router.post("/actor/:actorType/unregister").handler(this::unregisterActor);
+        this.router.post("/actor/:actorType/:actorId/create").handler(this::createActor);
+        this.router.post("/actor/:actorType/:actorId/stop").handler(this::stopActor);
+        this.router.post("/actor/:actorType/:actorId/method/:actorName").handler(this::publishActor);
     }
 
     private void invokeMethod(RoutingContext ctx) {
@@ -145,5 +151,81 @@ public class HttpApiServer {
                 log.debug("send {} message success", msgKey);
             }
         });
+    }
+
+    private void registerActor(RoutingContext ctx) {
+        getActorInfo(ctx)
+                .compose(info -> ctx.request().body()
+                        .compose(buffer -> context.actors().register(info.getType())))
+                .onSuccess(x -> ctx.response().end()).onFailure(err -> {
+                    log.error("register actor failed", err);
+                    ctx.response().setStatusCode(500).end(err.getMessage());
+                });
+    }
+
+    private void unregisterActor(RoutingContext ctx) {
+        getActorInfo(ctx)
+                .compose(info -> ctx.request().body()
+                        .compose(buffer -> context.actors().unregister(info.getType())))
+                .onSuccess(x -> ctx.response().end()).onFailure(err -> {
+                    log.error("register actor failed", err);
+                    ctx.response().setStatusCode(500).end(err.getMessage());
+                });
+    }
+
+    private void createActor(RoutingContext ctx) {
+        getActorInfo(ctx)
+                .compose(info -> ctx.request().body()
+                        .compose(buffer -> context.actors().actor(info.getType())
+                                .compose(actor -> actor.create(info.getId()))))
+                .onSuccess(x -> ctx.response().end()).onFailure(err -> {
+                    log.error("start actor failed", err);
+                    ctx.response().setStatusCode(500).end(err.getMessage());
+                });
+    }
+
+    private void stopActor(RoutingContext ctx) {
+        getActorInfo(ctx)
+                .compose(info -> ctx.request().body()
+                        .compose(buffer -> context.actors().actor(info.getType())
+                                .compose(actor -> actor.stop(info.getId()))))
+                .onSuccess(x -> ctx.response().end())
+                .onFailure(err -> {
+                    log.error("stop actor failed", err);
+                    ctx.response().setStatusCode(500).end(err.getMessage());
+                });
+    }
+
+    private void publishActor(RoutingContext ctx) {
+        getActorInfo(ctx)
+                .compose(info -> ctx.request().body()
+                        .compose(buffer -> context.actors().actor(info.getType())
+                                .compose(actor -> actor.publish(info.getId(), info.getName(), buffer))))
+                .onSuccess(x -> ctx.response().end())
+                .onFailure(err -> {
+                    log.error("publish actor failed", err);
+                    ctx.response().setStatusCode(500).end(err.getMessage());
+                });
+    }
+
+    private Future<ActorInfo> getActorInfo(RoutingContext ctx) {
+        ActorInfo actorInfo = new ActorInfo();
+
+        String actorType = ctx.pathParam("actorType");
+        if (!StringHelper.isEmpty(actorType)) {
+            actorInfo.setType(actorType);
+        }
+
+        String actorId = ctx.pathParam("actorId");
+        if (!StringHelper.isEmpty(actorId)) {
+            actorInfo.setId(actorId);
+        }
+
+        String actorName = ctx.pathParam("actorName");
+        if (StringHelper.isEmpty(actorName)) {
+            actorInfo.setName(actorName);
+        }
+
+        return Future.succeededFuture(actorInfo);
     }
 }

@@ -3,6 +3,7 @@ package org.mini.agent.runtime;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.mini.agent.runtime.actor.IActorEngine;
 import org.mini.agent.runtime.impl.bridge.HttpAgentBridge;
 import org.mini.agent.runtime.processor.BindingProcessor;
 import org.mini.agent.runtime.processor.IRuntimeProcessor;
@@ -36,6 +37,7 @@ public class RuntimeContext implements IRuntimeContext {
     private final Vertx vertx;
     private final Context vertxContext;
     private final HttpAgentBridge httpAgentBridge;
+    private final IActorEngine actorEngine;
     private JsonObject config;
 
     static {
@@ -58,6 +60,7 @@ public class RuntimeContext implements IRuntimeContext {
         this.agentHttpPort = tryConvertToInt(agentHttpPort, 80);
         this.httpServerHost = "127.0.0.1";
         this.httpAgentBridge = new HttpAgentBridge(vertx);
+        this.actorEngine = IActorEngine.create(vertx);
     }
 
     private int tryConvertToInt(String value, int defaultValue) {
@@ -145,5 +148,9 @@ public class RuntimeContext implements IRuntimeContext {
 
     public BindingProcessor getBindingProcessor() {
         return (BindingProcessor) processors.get(BINDING_PROCESSOR);
+    }
+
+    public IActorEngine actors() {
+        return actorEngine;
     }
 }

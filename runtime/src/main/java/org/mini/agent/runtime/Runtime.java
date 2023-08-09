@@ -76,17 +76,19 @@ public class Runtime implements Verticle {
         this.appContext.getHttpAgentBridge()
                 .init(this.appContext);
 
-        List<Future<Void>> processor = new ArrayList<>();
+        // List<Future<String>> processor = new ArrayList<>();
 
         for (Entry<String, IRuntimeProcessor> item : this.appContext.getProcessors().entrySet()) {
-            processor.add(item.getValue().start(this.appContext));
+            vertx.deployVerticle(new ProcessorVerticle(this.appContext,
+                    item.getValue()));
         }
 
-        return Future.all(processor)
-                // ignore err and return empty
-                .recover(err -> {
-                    log.error("runtime start failed", err);
-                    return Future.succeededFuture();
-                }).mapEmpty();
+        return Future.succeededFuture();
+        // return Future.all(processor)
+        // // ignore err and return empty
+        // .recover(err -> {
+        // log.error("runtime start failed", err);
+        // return Future.succeededFuture();
+        // }).mapEmpty();
     }
 }
