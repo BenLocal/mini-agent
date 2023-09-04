@@ -1,7 +1,6 @@
 package org.mini.agent.runtime;
 
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Promise;
 import io.vertx.core.cli.CLI;
 import io.vertx.core.cli.CommandLine;

@@ -1,7 +1,5 @@
 package org.mini.agent.runtime;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map.Entry;
 
 import org.mini.agent.runtime.config.RuntimeConfigLoader;
@@ -76,19 +74,12 @@ public class Runtime implements Verticle {
         this.appContext.getHttpAgentBridge()
                 .init(this.appContext);
 
-        // List<Future<String>> processor = new ArrayList<>();
-
         for (Entry<String, IRuntimeProcessor> item : this.appContext.getProcessors().entrySet()) {
             vertx.deployVerticle(new ProcessorVerticle(this.appContext,
                     item.getValue()));
         }
 
+        // ignore err and return empty future
         return Future.succeededFuture();
-        // return Future.all(processor)
-        // // ignore err and return empty
-        // .recover(err -> {
-        // log.error("runtime start failed", err);
-        // return Future.succeededFuture();
-        // }).mapEmpty();
     }
 }

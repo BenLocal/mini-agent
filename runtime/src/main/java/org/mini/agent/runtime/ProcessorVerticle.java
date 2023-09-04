@@ -3,7 +3,6 @@ package org.mini.agent.runtime;
 import org.mini.agent.runtime.processor.IRuntimeProcessor;
 
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Promise;
 import lombok.extern.slf4j.Slf4j;
 
 /**
