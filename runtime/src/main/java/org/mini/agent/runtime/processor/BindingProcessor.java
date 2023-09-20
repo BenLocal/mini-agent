@@ -159,6 +159,8 @@ public class BindingProcessor implements IRuntimeProcessor {
             log.info("input binding read success, name: {}", name);
             return;
         }
+
+        // default url is name if url is empty
         String url = StringHelper
                 .confirmLeadingSlash(res == null || StringHelper.isEmpty(res.getUrl()) ? name : res.getUrl());
 
