@@ -1,45 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
+    <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.mini.agent.sdk</groupId>
         <artifactId>sdk</artifactId>
+        <groupId>org.mini.agent.sdk</groupId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-	<groupId>org.mini.agent.sdk.spring</groupId>
-	<artifactId>springboot</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
-	<name>springboot</name>
+    <groupId>org.mini.agent.sdk.embed.spring</groupId>
+    <artifactId>embed-springboot-starter</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <name>embed-springboot-starter</name>
 
-	<properties>
-		<spring.boot.version>2.7.14</spring.boot.version>
-	</properties>
-
-	<dependencies>
-		<dependency>
+    <dependencies>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-		<dependency>
-			<groupId>io.vertx</groupId>
-			<artifactId>vertx-sync</artifactId>
-		</dependency>
 
-		<dependency>
-			<groupId>org.mini.agent.sdk.core</groupId>
-			<artifactId>core</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
-		</dependency>
+        <dependency>
+            <groupId>org.mini.agent.runtime</groupId>
+            <artifactId>runtime</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-	</dependencies>
+    </dependencies>
 
-	<build>
-	</build>
+    <build>
+    </build>
 
 </project>
