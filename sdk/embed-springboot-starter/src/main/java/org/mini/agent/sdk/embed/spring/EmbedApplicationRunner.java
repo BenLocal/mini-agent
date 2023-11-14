@@ -1,7 +1,6 @@
 package org.mini.agent.sdk.embed.spring;
 
-import io.vertx.core.Vertx;
-import org.mini.agent.runtime.MainVerticle;
+import org.mini.agent.sdk.spring.SpringAgentPort;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.web.ServerProperties;
@@ -27,7 +26,7 @@ public class EmbedApplicationRunner implements ApplicationRunner {
         io.vertx.core.Launcher l =  new io.vertx.core.Launcher();
 
         Integer port = serverProperties.getPort();
-        Integer agentPort = port + 1;
+        Integer agentPort = SpringAgentPort.getPort(serverProperties);
 
         String[] s = new String[] {
                 "run",
@@ -35,7 +34,7 @@ public class EmbedApplicationRunner implements ApplicationRunner {
                 "--appId",
                 "test",
                 "--agent-http-port",
-                String.valueOf(agentPort) ,
+                String.valueOf(agentPort),
                 "--http-port",
                 String.valueOf(port)
         };

@@ -19,8 +19,8 @@ import io.vertx.core.buffer.Buffer;
  *
  */
 public interface AgentSyncClient {
-    static AgentSyncClient create() {
-        return new AgentSyncClientImpl();
+    static AgentSyncClient create(int port) {
+        return new AgentSyncClientImpl(port);
     }
 
     AgentResponse invokeMethod(String httpMethod, MultiMap headers, Buffer body, InvokeMethodRequest request)

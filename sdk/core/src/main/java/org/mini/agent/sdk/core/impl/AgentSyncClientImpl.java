@@ -31,7 +31,9 @@ import okhttp3.Response;
 public class AgentSyncClientImpl extends BaseHttpClient implements AgentSyncClient {
     private final OkHttpClient client;
 
-    public AgentSyncClientImpl() {
+    public AgentSyncClientImpl(int port) {
+        super(port);
+
         this.client = HttpClientBuilder.build();
     }
 

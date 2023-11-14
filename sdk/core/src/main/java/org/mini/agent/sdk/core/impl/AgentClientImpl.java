@@ -4,6 +4,7 @@ import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 
 import org.mini.agent.sdk.core.AgentClient;
+import org.mini.agent.sdk.core.AgentPort;
 import org.mini.agent.sdk.core.BaseHttpClient;
 import org.mini.agent.sdk.core.event.OutputBindingRequest;
 import org.mini.agent.sdk.core.request.InvokeMethodRequest;
@@ -29,6 +30,7 @@ public class AgentClientImpl extends BaseHttpClient implements AgentClient {
     private final WebClient client;
 
     public AgentClientImpl(Vertx vertx) {
+        super(AgentPort.getPort(80));
         this.client = WebClient.create(vertx);
     }
 

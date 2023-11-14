@@ -11,6 +11,12 @@ public class BaseHttpClient {
     private static final String DEFAULT_HOST_NAME = "127.0.0.1";
     private static final int DEFAULT_PORT = 9999;
 
+    private final int port;
+
+    public BaseHttpClient(int port) {
+        this.port = port;
+    }
+
     protected String invokeMethodUrl(String appId, String methodPath) {
         return String.format("invoke/%s/method/%s", appId, methodPath);
     }
@@ -27,7 +33,14 @@ public class BaseHttpClient {
         return DEFAULT_HOST_NAME;
     }
 
+    /**
+     * agent server's port
+     * @return
+     */
     protected int port() {
+        if (this.port > 0) {
+            return this.port;
+        }
         return DEFAULT_PORT;
     }
 }
