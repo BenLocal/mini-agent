@@ -1,2 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-org.mini.agent.sdk.embed.spring.AutoConfiguration
+org.mini.agent.sdk.embed.spring.EmbedAutoConfiguration

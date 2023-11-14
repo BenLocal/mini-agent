@@ -1,4 +1,4 @@
-package org.mini.agent.example.springboot;
+package org.mini.agent.examples.springboot;
 
 import org.mini.agent.sdk.core.event.InputBindingResult;
 import org.mini.agent.sdk.core.request.PublishRequest;

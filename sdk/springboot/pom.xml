@@ -21,6 +21,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+
 		<dependency>
 			<groupId>io.vertx</groupId>
 			<artifactId>vertx-sync</artifactId>
@@ -38,8 +39,5 @@
             <scope>test</scope>
         </dependency>
 	</dependencies>
-
-	<build>
-	</build>
 
 </project>

@@ -1,4 +1,4 @@
-package org.mini.agent.example.springboot;
+package org.mini.agent.examples.springboot;
 
 import lombok.Data;
 

@@ -8,14 +8,14 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>org.mini.agent.example.springboot</groupId>
+    <groupId>org.mini.agent.examples.springboot</groupId>
     <artifactId>springboot-demo</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <start-class>org.mini.agent.example.springboot.App</start-class>
+        <start-class>org.mini.agent.examples.springboot.App</start-class>
         <spring.boot.version>2.7.14</spring.boot.version>
     </properties>
 

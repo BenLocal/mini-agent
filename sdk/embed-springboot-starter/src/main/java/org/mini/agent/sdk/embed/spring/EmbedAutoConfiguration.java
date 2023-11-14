@@ -12,5 +12,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConditionalOnWebApplication
 @ComponentScan("org.mini.agent.sdk.embed.spring")
-public class AutoConfiguration {
+public class EmbedAutoConfiguration {
+
+
 }

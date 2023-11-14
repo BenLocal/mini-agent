@@ -32,6 +32,24 @@
     </dependencies>
 
     <build>
+<!--        <pluginManagement>-->
+<!--            <plugins>-->
+<!--                &lt;!&ndash; We specify the Maven compiler plugin as we need to set it to Java 1.8 &ndash;&gt;-->
+<!--                <plugin>-->
+<!--                    <artifactId>maven-compiler-plugin</artifactId>-->
+<!--                    <version>3.1</version>-->
+<!--                    <configuration>-->
+<!--                        <source>${java.version}</source>-->
+<!--                        <target>${java.version}</target>-->
+<!--                        <annotationProcessors>-->
+<!--                            <annotationProcessor>io.vertx.codegen.CodeGenProcessor</annotationProcessor>-->
+<!--                        </annotationProcessors>-->
+<!--                        <compilerArgs>-->
+<!--                            <arg>-AoutputDirectory=${project.basedir}/src/main</arg>-->
+<!--                        </compilerArgs>-->
+<!--                    </configuration>-->
+<!--                </plugin>-->
+<!--            </plugins>-->
+<!--        </pluginManagement>-->
     </build>
-
 </project>
